@@ -16,7 +16,18 @@ module TestParser =
             "-a!", Expr.unaryMinus (Expr.factorial (Expr.var "a"))
             "-a! + b", Expr.plus (Expr.unaryMinus (Expr.factorial (Expr.var "a"))) (Expr.var "b")
             "(-a)! + b", Expr.plus (Expr.factorial (Expr.paren (Expr.unaryMinus (Expr.var "a")))) (Expr.var "b")
-            // TODO: if-then-else
+            "if x then y else z", Expr.ifThenElse (Expr.var "x") (Expr.var "y") (Expr.var "z")
+            "if x then y", Expr.ifThen (Expr.var "x") (Expr.var "y")
+            "1 + if x then y", Expr.plus (Expr.constInt 1) (Expr.ifThen (Expr.var "x") (Expr.var "y"))
+            "if x + 1 then y else z + 3",
+            Expr.ifThenElse
+                (Expr.plus (Expr.var "x") (Expr.constInt 1))
+                (Expr.var "y")
+                (Expr.plus (Expr.var "z") (Expr.constInt 3))
+            "(if x + 1 then y else z) + 3",
+            Expr.plus
+                (Expr.paren (Expr.ifThenElse (Expr.plus (Expr.var "x") (Expr.constInt 1)) (Expr.var "y") (Expr.var "z")))
+                (Expr.constInt 3)
 
             "g x y + a * (func b c)",
             let gXY =

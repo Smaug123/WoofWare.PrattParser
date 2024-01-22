@@ -71,6 +71,24 @@ module Parser =
 
                 Expr.paren contents, rest
 
+            elif firstToken.Type = TokenType.If then
+                let ifClause, rest = parseInner inputString rest 0
+
+                match rest with
+                | [] -> failwith "if requires a trailing then"
+                | head :: _ when head.Type <> TokenType.Then -> failwithf "if was not followed by then, got: %+A" head
+                | _ :: rest ->
+
+                let thenClause, rest = parseInner inputString rest 0
+
+                match rest with
+                | [] -> Expr.ifThen ifClause thenClause, rest
+                | head :: _ when head.Type <> TokenType.Else -> Expr.ifThen ifClause thenClause, rest
+                | _ :: rest ->
+
+                let elseClause, rest = parseInner inputString rest 0
+                Expr.ifThenElse ifClause thenClause elseClause, rest
+
             else
 
             match Token.prefixPrecedence firstToken.Type with

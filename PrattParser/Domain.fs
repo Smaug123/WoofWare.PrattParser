@@ -12,6 +12,7 @@ type Expr =
     | Factorial of Expr
     | Paren of Expr
     | IfThenElse of Expr * Expr * Expr
+    | IfThen of Expr * Expr
 
 [<RequireQualifiedAccess>]
 module Expr =
@@ -27,6 +28,8 @@ module Expr =
 
     let ifThenElse ifClause thenClause elseClause =
         Expr.IfThenElse (ifClause, thenClause, elseClause)
+
+    let ifThen ifClause thenClause = Expr.IfThen (ifClause, thenClause)
 
 [<RequireQualifiedAccess>]
 type TokenType =
