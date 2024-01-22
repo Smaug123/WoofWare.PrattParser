@@ -8,6 +8,11 @@ namespace PrattParser
 /// The trailing clause will consume as much as it can, so e.g. `if foo then bar!` would parse as
 /// `if foo then (bar!)`.
 ///
+/// Optionally you can specify that the bracket-like token consumes something at the beginning too:
+/// for example, `a.[3]` is a bracket pair `.[` and `]` with two inputs.
+/// Note that you could use this to implement binary operators, but they will bind as loosely as possible
+/// if you do this, and it's less efficient, and it's probably confusing to think about associativity.
+///
 /// Optionally you can specify a single construct with multiple delimiters:
 /// for example, `if...then...else...` consumes three expressions.
 type BracketLikeParser<'tokenTag, 'expr> =
@@ -15,6 +20,8 @@ type BracketLikeParser<'tokenTag, 'expr> =
         /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
         /// whereas `(...)` does not.
         ConsumeAfterFinalToken : bool
+        /// Whether to consume the input before the initial token, e.g. like `a.[5]` consumes the `a`.
+        ConsumeBeforeInitialToken : bool
         /// The successive list of delimiters after the initial delimiter that "opens the brackets".
         /// For example, this might be `[then]`, or `[then ; else]`, or `[')']`.
         BoundaryTokens : 'tokenTag list
@@ -142,6 +149,11 @@ module Parser =
 
     /// Add a bracket-like parser to the parser, introduced by a given delimiter.
     /// See the docs for BracketLikeParser.
+    ///
+    /// If you have multiple `BracketLikeParser`s, each with the same beginning delimiter,
+    /// we will try them all, and return the valid one which had the most bracket-like tokens in.
+    /// It's probably possible to create an ambiguous parse this way with an inappropriate grammar;
+    /// if this happens while parsing, we throw.
     let withBracketLike<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (tokenType : 'tokenTag)
         (toAdd : BracketLikeParser<'tokenTag, 'expr>)
@@ -237,9 +249,7 @@ module Parser =
 
         let lhs, rest =
             match parser.Atom inputString firstToken with
-            | Some token ->
-                printfn "Parsed an atom: %+A" token
-                token, rest
+            | Some token -> token, rest
             | None ->
 
             match parser.BracketLike.TryGetValue (parser.GetTag firstToken) with
@@ -257,9 +267,7 @@ module Parser =
 
             match parser.UnaryPrefix.TryGetValue (parser.GetTag firstToken) with
             | true, (((), precedence), assemble) ->
-                printfn "Parsing a prefix op: %+A" firstToken
                 let rhs, rest = parseInner parser inputString rest precedence
-                printfn "Returning to parse of prefix op: %+A, remaining tokens: %+A" firstToken rest
                 assemble rhs, rest
             | false, _ -> failwithf "didn't get an atom or prefix, got: %+A" firstToken
 
@@ -268,24 +276,34 @@ module Parser =
             | [] -> lhs, []
             | op :: rest ->
 
+            let fromBracketed =
+                match parser.BracketLike.TryGetValue (parser.GetTag op) with
+                | true, parse ->
+                    let parse = parse |> List.filter _.ConsumeBeforeInitialToken
+
+                    match parseBracketLike parser inputString parse [ lhs ] rest with
+                    | [ result ] -> Some result
+                    | _ :: _ -> failwithf "Ambiguous parse (multiple matches) at token %+A" op
+                    | [] -> None
+                | false, _ -> None
+
+            match fromBracketed with
+            | Some (lhs, rest) -> go lhs rest
+            | None ->
+
             match parser.UnaryPostfix.TryGetValue (parser.GetTag op) with
             | true, ((precedence, ()), construct) ->
                 if precedence < minBinding then
-                    printfn "Hit a postfix op which does not bind: %+A" op
                     lhs, rest
                 else
-                    printfn "Hit a postfix op which binds: %+A" op
                     go (construct lhs) rest
             | false, _ ->
 
             match parser.Infix.TryGetValue (parser.GetTag op) with
             | true, ((leftBinding, rightBinding), construct) ->
                 if leftBinding < minBinding then
-                    printfn "Hit an infix op which does not bind on the left: %+A" op
                     lhs, op :: rest
                 else
-
-                printfn "Hit an infix op which binds on the left: %+A" op
 
                 let rhs, remainingTokens = parseInner parser inputString rest rightBinding
 

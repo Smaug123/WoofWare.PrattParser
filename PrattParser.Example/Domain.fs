@@ -6,6 +6,7 @@ type Expr =
     | Times of Expr * Expr
     | UnaryMinus of Expr
     | Minus of Expr * Expr
+    | Equal of Expr * Expr
     | Int of int
     | FunctionCall of Expr * Expr
     | Var of string
@@ -13,10 +14,12 @@ type Expr =
     | Paren of Expr
     | IfThenElse of Expr * Expr * Expr
     | IfThen of Expr * Expr
+    | ArrayIndex of Expr * Expr
 
 [<RequireQualifiedAccess>]
 module Expr =
     let plus a b = Expr.Plus (a, b)
+    let equal a b = Expr.Equal (a, b)
     let times a b = Expr.Times (a, b)
     let unaryMinus a = Expr.UnaryMinus a
     let minus a b = Expr.Minus (a, b)
@@ -25,6 +28,7 @@ module Expr =
     let var name = Expr.Var name
     let factorial a = Expr.Factorial a
     let paren a = Expr.Paren a
+    let arrayIndex a b = Expr.ArrayIndex (a, b)
 
     let ifThenElse ifClause thenClause elseClause =
         Expr.IfThenElse (ifClause, thenClause, elseClause)
@@ -36,9 +40,12 @@ type TokenType =
     | Plus
     | Minus
     | Times
+    | Equal
     | ConstInt
     | LeftBracket
     | RightBracket
+    | ArrayIndex
+    | RightSquareBracket
     | Var
     | Factorial
     | If
@@ -74,4 +81,6 @@ module Token =
         | '+' -> standalone' TokenType.Plus i |> Some
         | '-' -> standalone' TokenType.Minus i |> Some
         | '!' -> standalone' TokenType.Factorial i |> Some
+        | '=' -> standalone' TokenType.Equal i |> Some
+        | ']' -> standalone' TokenType.RightSquareBracket i |> Some
         | _ -> None

@@ -28,6 +28,9 @@ module Lexer =
 
                     yield Token.standalone TokenType.ConstInt startI (i - startI)
                 | _, ' ' -> i <- i + 1
+                | _, '.' when i < s.Length - 1 && s.[i + 1] = '[' ->
+                    yield Token.standalone TokenType.ArrayIndex i 2
+                    i <- i + 2
                 | _, 'i' when i < s.Length - 1 && s.[i + 1] = 'f' ->
                     yield Token.standalone TokenType.If i 2
                     i <- i + 2
