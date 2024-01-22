@@ -66,33 +66,40 @@ module Parser =
         {
             Atom = atom
             Unary =
-                [
-                    TokenType.Plus, (((), 5), id)
-                    TokenType.Minus, (((), 5), Expr.unaryMinus)
-                ]
+                [ TokenType.Plus, (((), 5), id) ; TokenType.Minus, (((), 5), Expr.unaryMinus) ]
                 |> Map.ofList
             BracketLike =
                 [
-                    TokenType.LeftBracket, [{
-                        ConsumeAfterFinalToken = false
-                        BoundaryTokens = [TokenType.RightBracket]
-                        Construct = Seq.exactlyOne >> Expr.paren
-                    }]
-                    TokenType.If, [{
-                        ConsumeAfterFinalToken = true
-                        BoundaryTokens = [TokenType.Then ; TokenType.Else]
-                        Construct = fun s ->
-                            match s with
-                            | [ ifClause ; thenClause ; elseClause ] -> Expr.ifThenElse ifClause thenClause elseClause
-                            | _ -> failwith "logic error"
-                    } ; {
-                        ConsumeAfterFinalToken = true
-                        BoundaryTokens = [TokenType.Then]
-                        Construct = fun s ->
-                            match s with
-                            | [ ifClause ; thenClause ] -> Expr.ifThen ifClause thenClause
-                            | _ -> failwith "logic error"
-                    }]
+                    TokenType.LeftBracket,
+                    [
+                        {
+                            ConsumeAfterFinalToken = false
+                            BoundaryTokens = [ TokenType.RightBracket ]
+                            Construct = Seq.exactlyOne >> Expr.paren
+                        }
+                    ]
+                    TokenType.If,
+                    [
+                        {
+                            ConsumeAfterFinalToken = true
+                            BoundaryTokens = [ TokenType.Then ; TokenType.Else ]
+                            Construct =
+                                fun s ->
+                                    match s with
+                                    | [ ifClause ; thenClause ; elseClause ] ->
+                                        Expr.ifThenElse ifClause thenClause elseClause
+                                    | _ -> failwith "logic error"
+                        }
+                        {
+                            ConsumeAfterFinalToken = true
+                            BoundaryTokens = [ TokenType.Then ]
+                            Construct =
+                                fun s ->
+                                    match s with
+                                    | [ ifClause ; thenClause ] -> Expr.ifThen ifClause thenClause
+                                    | _ -> failwith "logic error"
+                        }
+                    ]
                 ]
                 |> Map.ofList
         }
@@ -105,23 +112,50 @@ module Parser =
         (tokens : Token list)
         : (Expr * Token list) list
         =
-        match tokens with
-        | [] -> failwith "bracket-like structure required tokens to parse, but got none"
-        | head :: tokens ->
-
         let subParsersEnded, subParsersContinuing =
-            subParsers
-            |> List.partition _.BoundaryTokens.IsEmpty
-        let subParsersContinuing =
-            subParsersContinuing
-            |> List.choose (fun subParser ->
-                if subParser.BoundaryTokens.Head = head.Type then
-                    { subParser with BoundaryTokens = List.tail subParser.BoundaryTokens }
-                    |> Some
-                else None
-            )
+            subParsers |> List.partition _.BoundaryTokens.IsEmpty
 
-        let fromSubParsersEnded =
+        let fromSubParsersContinuing =
+            // If there are any subparsers expecting further boundary tokens,
+            // then we should get the next contents so that we can provide it to them.
+            // But if there aren't any such subparsers, we don't have to (and indeed
+            // it would be incorrect to, because the token stream might validly have ended).
+            if subParsersContinuing.IsEmpty then
+                []
+            else
+
+            let contents, rest = parseInner parser inputString tokens 0
+
+            match rest with
+            | [] ->
+                // No valid parses down this path: we've run out of tokens despite all
+                // bracket-like parsers expecting another boundary token
+                []
+            | next :: rest ->
+
+            // Which bracket-like parsers are now ruled out by the next bracket-like token?
+            let subParsersContinuing =
+                subParsersContinuing
+                |> List.choose (fun subParser ->
+                    match subParser.BoundaryTokens with
+                    | [] -> failwith "logic error, this was ruled out earlier"
+                    | head :: boundary ->
+                        if head = next.Type then
+                            Some
+                                { subParser with
+                                    BoundaryTokens = boundary
+                                }
+                        else
+                            None
+                )
+
+            // And proceed with the ones which are still valid.
+            parseBracketLike parser inputString subParsersContinuing (contents :: exprsSoFar) rest
+
+        // We'll only consider bracket-like parsers which have already consumed all they want to consume
+        // if no other parser wanted to consume more. (That is, `if-then-else` is preferred to `if-then`
+        // as long as `if-then-else` succeeded, but if `if-then-else` failed, we'll fall back to `if-then`.)
+        if fromSubParsersContinuing.IsEmpty then
             subParsersEnded
             |> List.map (fun subParser ->
                 if subParser.ConsumeAfterFinalToken then
@@ -130,16 +164,18 @@ module Parser =
                 else
                     subParser.Construct (List.rev exprsSoFar), tokens
             )
-
-        let fromSubParsersContinuing =
-            let contents, rest = parseInner parser inputString tokens 0
-            parseBracketLike parser inputString subParsersContinuing (contents :: exprsSoFar) rest
-
-        fromSubParsersEnded @ fromSubParsersContinuing
+        else
+            fromSubParsersContinuing
 
     /// The input string is only required so that the tokens
     /// have something to slice into.
-    and parseInner (parser : Parser) (inputString : string) (tokens : Token list) (minBinding : int) : Expr * Token list =
+    and parseInner
+        (parser : Parser)
+        (inputString : string)
+        (tokens : Token list)
+        (minBinding : int)
+        : Expr * Token list
+        =
         match tokens with
         | [] -> failwith "cannot parse an empty list of tokens"
         | firstToken :: rest ->
@@ -152,9 +188,7 @@ module Parser =
             | None ->
 
             match parser.BracketLike.TryGetValue firstToken.Type with
-            | true, parse ->
-                parseBracketLike parser inputString parse [] rest
-                |> List.exactlyOne
+            | true, parse -> parseBracketLike parser inputString parse [] rest |> List.exactlyOne
             | false, _ ->
 
             match parser.Unary.TryGetValue firstToken.Type with
