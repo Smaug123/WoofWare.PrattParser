@@ -46,58 +46,124 @@ module Parser =
         | TokenType.Factorial -> Expr.factorial expr
         | _ -> failwithf "not a prefix op: %+A" op
 
+    type BracketLikeParser =
+        {
+            /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
+            /// whereas `(...)` does not
+            ConsumeAfterFinalToken : bool
+            BoundaryTokens : TokenType list
+            Construct : Expr list -> Expr
+        }
+
+    type Parser =
+        {
+            Unary : Map<TokenType, (unit * int) * (Expr -> Expr)>
+            Atom : string -> Token -> Expr option
+            BracketLike : Map<TokenType, BracketLikeParser list>
+        }
+
+    let basicParser : Parser =
+        {
+            Atom = atom
+            Unary =
+                [
+                    TokenType.Plus, (((), 5), id)
+                    TokenType.Minus, (((), 5), Expr.unaryMinus)
+                ]
+                |> Map.ofList
+            BracketLike =
+                [
+                    TokenType.LeftBracket, [{
+                        ConsumeAfterFinalToken = false
+                        BoundaryTokens = [TokenType.RightBracket]
+                        Construct = Seq.exactlyOne >> Expr.paren
+                    }]
+                    TokenType.If, [{
+                        ConsumeAfterFinalToken = true
+                        BoundaryTokens = [TokenType.Then ; TokenType.Else]
+                        Construct = fun s ->
+                            match s with
+                            | [ ifClause ; thenClause ; elseClause ] -> Expr.ifThenElse ifClause thenClause elseClause
+                            | _ -> failwith "logic error"
+                    } ; {
+                        ConsumeAfterFinalToken = true
+                        BoundaryTokens = [TokenType.Then]
+                        Construct = fun s ->
+                            match s with
+                            | [ ifClause ; thenClause ] -> Expr.ifThen ifClause thenClause
+                            | _ -> failwith "logic error"
+                    }]
+                ]
+                |> Map.ofList
+        }
+
+    let rec parseBracketLike
+        (parser : Parser)
+        (inputString : string)
+        (subParsers : BracketLikeParser list)
+        (exprsSoFar : Expr list)
+        (tokens : Token list)
+        : (Expr * Token list) list
+        =
+        match tokens with
+        | [] -> failwith "bracket-like structure required tokens to parse, but got none"
+        | head :: tokens ->
+
+        let subParsersEnded, subParsersContinuing =
+            subParsers
+            |> List.partition _.BoundaryTokens.IsEmpty
+        let subParsersContinuing =
+            subParsersContinuing
+            |> List.choose (fun subParser ->
+                if subParser.BoundaryTokens.Head = head.Type then
+                    { subParser with BoundaryTokens = List.tail subParser.BoundaryTokens }
+                    |> Some
+                else None
+            )
+
+        let fromSubParsersEnded =
+            subParsersEnded
+            |> List.map (fun subParser ->
+                if subParser.ConsumeAfterFinalToken then
+                    let contents, rest = parseInner parser inputString tokens 0
+                    subParser.Construct (List.rev (contents :: exprsSoFar)), rest
+                else
+                    subParser.Construct (List.rev exprsSoFar), tokens
+            )
+
+        let fromSubParsersContinuing =
+            let contents, rest = parseInner parser inputString tokens 0
+            parseBracketLike parser inputString subParsersContinuing (contents :: exprsSoFar) rest
+
+        fromSubParsersEnded @ fromSubParsersContinuing
+
     /// The input string is only required so that the tokens
     /// have something to slice into.
-    let rec parseInner (inputString : string) (tokens : Token list) (minBinding : int) : Expr * Token list =
+    and parseInner (parser : Parser) (inputString : string) (tokens : Token list) (minBinding : int) : Expr * Token list =
         match tokens with
         | [] -> failwith "cannot parse an empty list of tokens"
         | firstToken :: rest ->
 
         let lhs, rest =
-            match atom inputString firstToken with
+            match parser.Atom inputString firstToken with
             | Some token ->
                 printfn "Parsed an atom: %+A" token
                 token, rest
             | None ->
 
-            if firstToken.Type = TokenType.LeftBracket then
-                let contents, rest = parseInner inputString rest 0
+            match parser.BracketLike.TryGetValue firstToken.Type with
+            | true, parse ->
+                parseBracketLike parser inputString parse [] rest
+                |> List.exactlyOne
+            | false, _ ->
 
-                match rest with
-                | [] -> failwith "unterminated bracket"
-                | head :: _ when head.Type <> TokenType.RightBracket ->
-                    failwithf "bracketed expression not followed by a right bracket, got: %+A" head
-                | _ :: rest ->
-
-                Expr.paren contents, rest
-
-            elif firstToken.Type = TokenType.If then
-                let ifClause, rest = parseInner inputString rest 0
-
-                match rest with
-                | [] -> failwith "if requires a trailing then"
-                | head :: _ when head.Type <> TokenType.Then -> failwithf "if was not followed by then, got: %+A" head
-                | _ :: rest ->
-
-                let thenClause, rest = parseInner inputString rest 0
-
-                match rest with
-                | [] -> Expr.ifThen ifClause thenClause, rest
-                | head :: _ when head.Type <> TokenType.Else -> Expr.ifThen ifClause thenClause, rest
-                | _ :: rest ->
-
-                let elseClause, rest = parseInner inputString rest 0
-                Expr.ifThenElse ifClause thenClause elseClause, rest
-
-            else
-
-            match Token.prefixPrecedence firstToken.Type with
-            | Some ((), precedence) ->
+            match parser.Unary.TryGetValue firstToken.Type with
+            | true, (((), precedence), assemble) ->
                 printfn "Parsing a prefix op: %+A" firstToken
-                let rhs, rest = parseInner inputString rest precedence
+                let rhs, rest = parseInner parser inputString rest precedence
                 printfn "Returning to parse of prefix op: %+A, remaining tokens: %+A" firstToken rest
-                buildUnary firstToken.Type rhs, rest
-            | None -> failwithf "didn't get an atom or prefix, got: %+A" firstToken
+                assemble rhs, rest
+            | false, _ -> failwithf "didn't get an atom or prefix, got: %+A" firstToken
 
         let rec go (lhs : Expr) (tokens : Token list) : Expr * Token list =
             match tokens with
@@ -125,10 +191,10 @@ module Parser =
 
             printfn "Hit an infix op which binds on the left: %+A" op
 
-            let rhs, remainingTokens = parseInner inputString rest rightBinding
+            let rhs, remainingTokens = parseInner parser inputString rest rightBinding
 
             go (buildBinary op.Type lhs rhs) remainingTokens
 
         go lhs rest
 
-    let parse inputString tokens = parseInner inputString tokens 0
+    let parse parser inputString tokens = parseInner parser inputString tokens 0
