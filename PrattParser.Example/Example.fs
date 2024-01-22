@@ -28,8 +28,7 @@ module Example =
         | TokenType.RightBracket -> None
 
     let parser =
-        Parser.empty _.Type
-        |> Parser.defineAtoms atom
+        Parser.make (fun token -> token.Type) atom
         |> Parser.withUnaryPostfix TokenType.Factorial (7, ()) Expr.factorial
         |> Parser.withUnaryPrefix TokenType.Plus ((), 5) id
         |> Parser.withUnaryPrefix TokenType.Minus ((), 5) Expr.unaryMinus

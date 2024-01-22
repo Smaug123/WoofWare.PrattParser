@@ -1,28 +1,56 @@
 namespace PrattParser
 
+/// Specification of how to parse things which act like brackets: that is, they start with a token,
+/// then consume some stuff, then there's another token to mark the end.
+///
+/// Optionally you can specify that the bracket-like token consumes something at the end too:
+/// for example, `if...then...` does not have a trailing "end-if".
+/// The trailing clause will consume as much as it can, so e.g. `if foo then bar!` would parse as
+/// `if foo then (bar!)`.
+///
+/// Optionally you can specify a single construct with multiple delimiters:
+/// for example, `if...then...else...` consumes three expressions.
 type BracketLikeParser<'tokenTag, 'expr> =
     {
         /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
-        /// whereas `(...)` does not
+        /// whereas `(...)` does not.
         ConsumeAfterFinalToken : bool
+        /// The successive list of delimiters after the initial delimiter that "opens the brackets".
+        /// For example, this might be `[then]`, or `[then ; else]`, or `[')']`.
         BoundaryTokens : 'tokenTag list
+        /// How to build an expression given that you've got all the constituent chunks that came
+        /// between the delimiters.
+        ///
+        /// We guarantee that the input list will have (as many elements as BoundaryTokens)+1
+        /// if ConsumeAfterFinalToken is true, or as many elements as BoundaryTokens
+        /// if ConsumeAfterFinalToken is false.
         Construct : 'expr list -> 'expr
     }
 
+/// An entity which knows how to parse a stream of 'tokens into an 'expr.
 type Parser<'tokenTag, 'token, 'expr> when 'tokenTag : comparison =
-    {
-        GetTag : 'token -> 'tokenTag
-        UnaryPrefix : Map<'tokenTag, (unit * int) * ('expr -> 'expr)>
-        UnaryPostfix : Map<'tokenTag, (int * unit) * ('expr -> 'expr)>
-        Infix : Map<'tokenTag, (int * int) * ('expr -> 'expr -> 'expr)>
-        Atom : string -> 'token -> 'expr option
-        BracketLike : Map<'tokenTag, BracketLikeParser<'tokenTag, 'expr> list>
-    }
+    private
+        {
+            GetTag : 'token -> 'tokenTag
+            UnaryPrefix : Map<'tokenTag, (unit * int) * ('expr -> 'expr)>
+            UnaryPostfix : Map<'tokenTag, (int * unit) * ('expr -> 'expr)>
+            Infix : Map<'tokenTag, (int * int) * ('expr -> 'expr -> 'expr)>
+            Atom : string -> 'token -> 'expr option
+            BracketLike : Map<'tokenTag, BracketLikeParser<'tokenTag, 'expr> list>
+        }
 
+/// Module for constructing and executing Parsers.
 [<RequireQualifiedAccess>]
 module Parser =
-    let empty<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+    /// The basic parser with the minimum possible information.
+    /// You specify how to take a token and get a tag from it,
+    /// and you specify how to convert atoms (such as constant ints, or variables) into expressions.
+    ///
+    /// The atom-parsing function is given the entire source string, as well as the 'token
+    /// of which we are asking "is this an atom, and if so, how shall it be represented in the AST?".
+    let make<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (getTag : 'token -> 'tokenTag)
+        (atoms : string -> 'token -> 'expr option)
         : Parser<'tokenTag, 'token, 'expr>
         =
         {
@@ -30,15 +58,20 @@ module Parser =
             UnaryPrefix = Map.empty
             UnaryPostfix = Map.empty
             Infix = Map.empty
-            Atom = fun _ _ -> None
+            Atom = atoms
             BracketLike = Map.empty
         }
 
+    /// Add a prefix operator to this parser.
+    /// The precedence is an int, where higher numbers bind more tightly.
+    /// (Following [matklad](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html), we
+    /// express this as `unit * int` to make it clear that it's binding on the right.)
     let withUnaryPrefix<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (tokenType : 'tokenTag)
         (precedence : unit * int)
         (construct : 'expr -> 'expr)
         (parser : Parser<'tokenTag, 'token, 'expr>)
+        : Parser<'tokenTag, 'token, 'expr>
         =
         { parser with
             UnaryPrefix =
@@ -52,11 +85,16 @@ module Parser =
                     )
         }
 
+    /// Add a postfix operator to this parser.
+    /// The precedence is an int, where higher numbers bind more tightly.
+    /// (Following [matklad](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html), we
+    /// express this as `int * unit` to make it clear that it's binding on the left.)
     let withUnaryPostfix<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (tokenType : 'tokenTag)
         (precedence : int * unit)
         (construct : 'expr -> 'expr)
         (parser : Parser<'tokenTag, 'token, 'expr>)
+        : Parser<'tokenTag, 'token, 'expr>
         =
         { parser with
             UnaryPostfix =
@@ -70,6 +108,19 @@ module Parser =
                     )
         }
 
+    /// Add a binary infix operator to this parser.
+    /// The precedence is a pair of ints, where higher numbers bind more tightly.
+    ///
+    /// For example, to make an operator associate on the left, you would give it
+    /// tighter (higher-precedence) binding on the right, whereupon parsing would proceed as follows:
+    ///
+    /// 1 + 2 + 3 := 1 +2 +3
+    ///
+    /// after which the only possible bracketing that doesn't split up a tightly-bound operator is:
+    ///
+    /// (1 + 2) + 3
+    ///
+    /// This situation could be specified with a precedence of (n, n + 1), for example.
     let withInfix<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (tokenType : 'tokenTag)
         (precedence : int * int)
@@ -89,6 +140,8 @@ module Parser =
                     )
         }
 
+    /// Add a bracket-like parser to the parser, introduced by a given delimiter.
+    /// See the docs for BracketLikeParser.
     let withBracketLike<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (tokenType : 'tokenTag)
         (toAdd : BracketLikeParser<'tokenTag, 'expr>)
@@ -105,15 +158,6 @@ module Parser =
                         | None -> Some [ toAdd ]
                         | Some existing -> Some (toAdd :: existing)
                     )
-        }
-
-    let defineAtoms<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
-        (atom : string -> 'token -> 'expr option)
-        (parser : Parser<'tokenTag, 'token, 'expr>)
-        : Parser<'tokenTag, 'token, 'expr>
-        =
-        { parser with
-            Atom = atom
         }
 
     let rec private parseBracketLike
@@ -252,9 +296,14 @@ module Parser =
 
         go lhs rest
 
-    let parse<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+    /// Execute the given parser against a string which was tokenised in the given way.
+    /// We give you the string so that you may have your tokens slice into it.
+    ///
+    /// Returns the parsed expression, and any leftover tokens that may be trailing.
+    let execute<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
         (parser : Parser<'tokenTag, 'token, 'expr>)
         (inputString : string)
         (tokens : 'token list)
+        : 'expr * 'token list
         =
         parseInner parser inputString tokens 0

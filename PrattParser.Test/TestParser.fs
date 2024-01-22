@@ -25,6 +25,8 @@ module TestParser =
                 (Expr.plus (Expr.var "x") (Expr.constInt 1))
                 (Expr.var "y")
                 (Expr.plus (Expr.var "z") (Expr.constInt 3))
+            "if x + 1 then y else z!",
+            Expr.ifThenElse (Expr.plus (Expr.var "x") (Expr.constInt 1)) (Expr.var "y") (Expr.factorial (Expr.var "z"))
             "(if x + 1 then y else z) + 3",
             Expr.plus
                 (Expr.paren (Expr.ifThenElse (Expr.plus (Expr.var "x") (Expr.constInt 1)) (Expr.var "y") (Expr.var "z")))
@@ -46,6 +48,6 @@ module TestParser =
     let ``Parser looks plausible`` (input : string, expected : Expr) =
         let tokens = Lexer.lex input |> List.ofSeq
 
-        let expr, remaining = Parser.parse Example.parser input tokens
+        let expr, remaining = Parser.execute Example.parser input tokens
         remaining |> shouldEqual []
         expr |> shouldEqual expected
