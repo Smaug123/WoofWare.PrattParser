@@ -1,30 +1,32 @@
 namespace PrattParser
 
-open System
-open System.Globalization
-
-type BracketLikeParser =
+type BracketLikeParser<'tokenTag, 'expr> =
     {
         /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
         /// whereas `(...)` does not
         ConsumeAfterFinalToken : bool
-        BoundaryTokens : TokenType list
-        Construct : Expr list -> Expr
+        BoundaryTokens : 'tokenTag list
+        Construct : 'expr list -> 'expr
     }
 
-type Parser =
+type Parser<'tokenTag, 'token, 'expr> when 'tokenTag : comparison =
     {
-        UnaryPrefix : Map<TokenType, (unit * int) * (Expr -> Expr)>
-        UnaryPostfix : Map<TokenType, (int * unit) * (Expr -> Expr)>
-        Infix : Map<TokenType, (int * int) * (Expr -> Expr -> Expr)>
-        Atom : string -> Token -> Expr option
-        BracketLike : Map<TokenType, BracketLikeParser list>
+        GetTag : 'token -> 'tokenTag
+        UnaryPrefix : Map<'tokenTag, (unit * int) * ('expr -> 'expr)>
+        UnaryPostfix : Map<'tokenTag, (int * unit) * ('expr -> 'expr)>
+        Infix : Map<'tokenTag, (int * int) * ('expr -> 'expr -> 'expr)>
+        Atom : string -> 'token -> 'expr option
+        BracketLike : Map<'tokenTag, BracketLikeParser<'tokenTag, 'expr> list>
     }
 
 [<RequireQualifiedAccess>]
 module Parser =
-    let empty =
+    let empty<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (getTag : 'token -> 'tokenTag)
+        : Parser<'tokenTag, 'token, 'expr>
+        =
         {
+            GetTag = getTag
             UnaryPrefix = Map.empty
             UnaryPostfix = Map.empty
             Infix = Map.empty
@@ -32,7 +34,12 @@ module Parser =
             BracketLike = Map.empty
         }
 
-    let withUnaryPrefix (tokenType : TokenType) (precedence : unit * int) (construct : Expr -> Expr) (parser : Parser) =
+    let withUnaryPrefix<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (tokenType : 'tokenTag)
+        (precedence : unit * int)
+        (construct : 'expr -> 'expr)
+        (parser : Parser<'tokenTag, 'token, 'expr>)
+        =
         { parser with
             UnaryPrefix =
                 parser.UnaryPrefix
@@ -45,11 +52,11 @@ module Parser =
                     )
         }
 
-    let withUnaryPostfix
-        (tokenType : TokenType)
+    let withUnaryPostfix<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (tokenType : 'tokenTag)
         (precedence : int * unit)
-        (construct : Expr -> Expr)
-        (parser : Parser)
+        (construct : 'expr -> 'expr)
+        (parser : Parser<'tokenTag, 'token, 'expr>)
         =
         { parser with
             UnaryPostfix =
@@ -63,12 +70,12 @@ module Parser =
                     )
         }
 
-    let withInfix
-        (tokenType : TokenType)
+    let withInfix<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (tokenType : 'tokenTag)
         (precedence : int * int)
-        (construct : Expr -> Expr -> Expr)
-        (parser : Parser)
-        : Parser
+        (construct : 'expr -> 'expr -> 'expr)
+        (parser : Parser<'tokenTag, 'token, 'expr>)
+        : Parser<'tokenTag, 'token, 'expr>
         =
         { parser with
             Infix =
@@ -82,7 +89,12 @@ module Parser =
                     )
         }
 
-    let withBracketLike (tokenType : TokenType) (toAdd : BracketLikeParser) (parser : Parser) : Parser =
+    let withBracketLike<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (tokenType : 'tokenTag)
+        (toAdd : BracketLikeParser<'tokenTag, 'expr>)
+        (parser : Parser<'tokenTag, 'token, 'expr>)
+        : Parser<'tokenTag, 'token, 'expr>
+        =
         { parser with
             BracketLike =
                 parser.BracketLike
@@ -95,18 +107,22 @@ module Parser =
                     )
         }
 
-    let defineAtoms (atom : string -> Token -> Expr option) (parser : Parser) : Parser =
+    let defineAtoms<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (atom : string -> 'token -> 'expr option)
+        (parser : Parser<'tokenTag, 'token, 'expr>)
+        : Parser<'tokenTag, 'token, 'expr>
+        =
         { parser with
             Atom = atom
         }
 
-    let rec parseBracketLike
-        (parser : Parser)
+    let rec private parseBracketLike
+        (parser : Parser<'tokenTag, 'token, 'expr>)
         (inputString : string)
-        (subParsers : BracketLikeParser list)
-        (exprsSoFar : Expr list)
-        (tokens : Token list)
-        : (Expr * Token list) list
+        (subParsers : BracketLikeParser<'tokenTag, 'expr> list)
+        (exprsSoFar : 'expr list)
+        (tokens : 'token list)
+        : ('expr * 'token list) list
         =
         let subParsersEnded, subParsersContinuing =
             subParsers |> List.partition _.BoundaryTokens.IsEmpty
@@ -136,7 +152,7 @@ module Parser =
                     match subParser.BoundaryTokens with
                     | [] -> failwith "logic error, this was ruled out earlier"
                     | head :: boundary ->
-                        if head = next.Type then
+                        if head = parser.GetTag next then
                             Some
                                 { subParser with
                                     BoundaryTokens = boundary
@@ -164,12 +180,12 @@ module Parser =
             fromSubParsersContinuing
 
     /// The input string is only required so that the tokens have something to slice into.
-    and parseInner
-        (parser : Parser)
+    and private parseInner
+        (parser : Parser<'tokenTag, 'token, 'expr>)
         (inputString : string)
-        (tokens : Token list)
+        (tokens : 'token list)
         (minBinding : int)
-        : Expr * Token list
+        : 'expr * 'token list
         =
         match tokens with
         | [] -> failwith "cannot parse an empty list of tokens"
@@ -182,7 +198,7 @@ module Parser =
                 token, rest
             | None ->
 
-            match parser.BracketLike.TryGetValue firstToken.Type with
+            match parser.BracketLike.TryGetValue (parser.GetTag firstToken) with
             | true, parse ->
                 // This is an ambiguous parse if multiple parsers genuinely matched.
                 // (We already filter to the longest possible matching parser.)
@@ -195,7 +211,7 @@ module Parser =
                         firstToken
             | false, _ ->
 
-            match parser.UnaryPrefix.TryGetValue firstToken.Type with
+            match parser.UnaryPrefix.TryGetValue (parser.GetTag firstToken) with
             | true, (((), precedence), assemble) ->
                 printfn "Parsing a prefix op: %+A" firstToken
                 let rhs, rest = parseInner parser inputString rest precedence
@@ -203,12 +219,12 @@ module Parser =
                 assemble rhs, rest
             | false, _ -> failwithf "didn't get an atom or prefix, got: %+A" firstToken
 
-        let rec go (lhs : Expr) (tokens : Token list) : Expr * Token list =
+        let rec go (lhs : 'expr) (tokens : 'token list) : 'expr * 'token list =
             match tokens with
             | [] -> lhs, []
             | op :: rest ->
 
-            match parser.UnaryPostfix.TryGetValue op.Type with
+            match parser.UnaryPostfix.TryGetValue (parser.GetTag op) with
             | true, ((precedence, ()), construct) ->
                 if precedence < minBinding then
                     printfn "Hit a postfix op which does not bind: %+A" op
@@ -218,7 +234,7 @@ module Parser =
                     go (construct lhs) rest
             | false, _ ->
 
-            match parser.Infix.TryGetValue op.Type with
+            match parser.Infix.TryGetValue (parser.GetTag op) with
             | true, ((leftBinding, rightBinding), construct) ->
                 if leftBinding < minBinding then
                     printfn "Hit an infix op which does not bind on the left: %+A" op
