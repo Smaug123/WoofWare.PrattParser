@@ -9,7 +9,7 @@ module TestLexer =
 
     [<Test>]
     let ``Lexer looks plausible`` () =
-        let input = "g x y + a * func (b + 100)"
+        let input = "g x y! + a * func (b + 100)"
 
         let expected =
             [
@@ -26,40 +26,44 @@ module TestLexer =
                     Trivia = (4, 1)
                 }
                 {
+                    Type = TokenType.Factorial
+                    Trivia = (5, 1)
+                }
+                {
                     Type = TokenType.Plus
-                    Trivia = (6, 1)
+                    Trivia = (7, 1)
                 }
                 {
                     Type = TokenType.Var
-                    Trivia = (8, 1)
+                    Trivia = (9, 1)
                 }
                 {
                     Type = TokenType.Times
-                    Trivia = (10, 1)
+                    Trivia = (11, 1)
                 }
                 {
                     Type = TokenType.Var
-                    Trivia = (12, 4)
+                    Trivia = (13, 4)
                 }
                 {
                     Type = TokenType.LeftBracket
-                    Trivia = (17, 1)
-                }
-                {
-                    Type = TokenType.Var
                     Trivia = (18, 1)
                 }
                 {
+                    Type = TokenType.Var
+                    Trivia = (19, 1)
+                }
+                {
                     Type = TokenType.Plus
-                    Trivia = (20, 1)
+                    Trivia = (21, 1)
                 }
                 {
                     Type = TokenType.ConstInt
-                    Trivia = (22, 3)
+                    Trivia = (23, 3)
                 }
                 {
                     Type = TokenType.RightBracket
-                    Trivia = (25, 1)
+                    Trivia = (26, 1)
                 }
             ]
 

@@ -5,18 +5,28 @@ type Expr =
     | Plus of Expr * Expr
     | Times of Expr * Expr
     | UnaryMinus of Expr
+    | Minus of Expr * Expr
     | Int of int
     | FunctionCall of Expr * Expr
     | Var of string
+    | Factorial of Expr
+    | Paren of Expr
+    | IfThenElse of Expr * Expr * Expr
 
 [<RequireQualifiedAccess>]
 module Expr =
     let plus a b = Expr.Plus (a, b)
     let times a b = Expr.Times (a, b)
     let unaryMinus a = Expr.UnaryMinus a
+    let minus a b = Expr.Minus (a, b)
     let constInt a = Expr.Int a
     let functionCall f x = Expr.FunctionCall (f, x)
     let var name = Expr.Var name
+    let factorial a = Expr.Factorial a
+    let paren a = Expr.Paren a
+
+    let ifThenElse ifClause thenClause elseClause =
+        Expr.IfThenElse (ifClause, thenClause, elseClause)
 
 [<RequireQualifiedAccess>]
 type TokenType =
@@ -27,6 +37,10 @@ type TokenType =
     | LeftBracket
     | RightBracket
     | Var
+    | Factorial
+    | If
+    | Then
+    | Else
 
 type Token =
     {
@@ -56,4 +70,23 @@ module Token =
         | '*' -> standalone' TokenType.Times i |> Some
         | '+' -> standalone' TokenType.Plus i |> Some
         | '-' -> standalone' TokenType.Minus i |> Some
+        | '!' -> standalone' TokenType.Factorial i |> Some
+        | _ -> None
+
+    let infixPrecedence (token : TokenType) : (int * int) option =
+        match token with
+        | TokenType.Plus
+        | TokenType.Minus -> Some (1, 2)
+        | TokenType.Times -> Some (3, 4)
+        | _ -> None
+
+    let prefixPrecedence (token : TokenType) : (unit * int) option =
+        match token with
+        | TokenType.Plus
+        | TokenType.Minus -> Some ((), 5)
+        | _ -> None
+
+    let postfixPrecedence (token : TokenType) : (int * unit) option =
+        match token with
+        | TokenType.Factorial -> Some (7, ())
         | _ -> None

@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <Compile Include="Domain.fs" />
-        <Compile Include="Lexer.fs" />
-        <None Include="Program.fs"/>
-    </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Domain.fs"/>
+    <Compile Include="Lexer.fs"/>
+    <Compile Include="Parser.fs"/>
+  </ItemGroup>
 
 </Project>
