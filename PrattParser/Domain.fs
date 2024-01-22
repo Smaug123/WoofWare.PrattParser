@@ -75,21 +75,3 @@ module Token =
         | '-' -> standalone' TokenType.Minus i |> Some
         | '!' -> standalone' TokenType.Factorial i |> Some
         | _ -> None
-
-    let infixPrecedence (token : TokenType) : (int * int) option =
-        match token with
-        | TokenType.Plus
-        | TokenType.Minus -> Some (1, 2)
-        | TokenType.Times -> Some (3, 4)
-        | _ -> None
-
-    let prefixPrecedence (token : TokenType) : (unit * int) option =
-        match token with
-        | TokenType.Plus
-        | TokenType.Minus -> Some ((), 5)
-        | _ -> None
-
-    let postfixPrecedence (token : TokenType) : (int * unit) option =
-        match token with
-        | TokenType.Factorial -> Some (7, ())
-        | _ -> None

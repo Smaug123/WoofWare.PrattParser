@@ -10,15 +10,9 @@ module Parser =
         | TokenType.ConstInt ->
             let start, len = token.Trivia
 
-            Some (
-                Expr.constInt (
-                    Int32.Parse (
-                        inputString.AsSpan().Slice (start, len),
-                        NumberStyles.None,
-                        CultureInfo.InvariantCulture
-                    )
-                )
-            )
+            Int32.Parse (inputString.AsSpan().Slice (start, len), NumberStyles.None, CultureInfo.InvariantCulture)
+            |> Expr.constInt
+            |> Some
         | TokenType.Var ->
             let start, len = token.Trivia
             Some (Expr.var (inputString.Substring (start, len)))
@@ -32,20 +26,6 @@ module Parser =
         | TokenType.LeftBracket
         | TokenType.RightBracket -> None
 
-    let buildBinary (op : TokenType) (lhs : Expr) (rhs : Expr) : Expr =
-        match op with
-        | TokenType.Plus -> Expr.plus lhs rhs
-        | TokenType.Minus -> Expr.minus lhs rhs
-        | TokenType.Times -> Expr.times lhs rhs
-        | _ -> failwithf "unexpected operation %+A seems not to be a binary op" op
-
-    let buildUnary (op : TokenType) (expr : Expr) : Expr =
-        match op with
-        | TokenType.Plus -> expr
-        | TokenType.Minus -> Expr.unaryMinus expr
-        | TokenType.Factorial -> Expr.factorial expr
-        | _ -> failwithf "not a prefix op: %+A" op
-
     type BracketLikeParser =
         {
             /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
@@ -57,7 +37,9 @@ module Parser =
 
     type Parser =
         {
-            Unary : Map<TokenType, (unit * int) * (Expr -> Expr)>
+            UnaryPrefix : Map<TokenType, (unit * int) * (Expr -> Expr)>
+            UnaryPostfix : Map<TokenType, (int * unit) * (Expr -> Expr)>
+            Infix : Map<TokenType, (int * int) * (Expr -> Expr -> Expr)>
             Atom : string -> Token -> Expr option
             BracketLike : Map<TokenType, BracketLikeParser list>
         }
@@ -65,8 +47,16 @@ module Parser =
     let basicParser : Parser =
         {
             Atom = atom
-            Unary =
+            UnaryPrefix =
                 [ TokenType.Plus, (((), 5), id) ; TokenType.Minus, (((), 5), Expr.unaryMinus) ]
+                |> Map.ofList
+            UnaryPostfix = [ TokenType.Factorial, ((7, ()), Expr.factorial) ] |> Map.ofList
+            Infix =
+                [
+                    TokenType.Plus, ((1, 2), Expr.plus)
+                    TokenType.Minus, ((1, 2), Expr.minus)
+                    TokenType.Times, ((3, 4), Expr.times)
+                ]
                 |> Map.ofList
             BracketLike =
                 [
@@ -188,10 +178,19 @@ module Parser =
             | None ->
 
             match parser.BracketLike.TryGetValue firstToken.Type with
-            | true, parse -> parseBracketLike parser inputString parse [] rest |> List.exactlyOne
+            | true, parse ->
+                // This is an ambiguous parse if multiple parsers genuinely matched.
+                // (We already filter to the longest possible matching parser.)
+                match parseBracketLike parser inputString parse [] rest with
+                | [] -> failwithf "Failed to parse any bracket-like parsers for %+A" firstToken
+                | [ x ] -> x
+                | _ ->
+                    failwithf
+                        "Ambiguous parse for bracket-like construct. You should restrict the grammar. %+A"
+                        firstToken
             | false, _ ->
 
-            match parser.Unary.TryGetValue firstToken.Type with
+            match parser.UnaryPrefix.TryGetValue firstToken.Type with
             | true, (((), precedence), assemble) ->
                 printfn "Parsing a prefix op: %+A" firstToken
                 let rhs, rest = parseInner parser inputString rest precedence
@@ -204,19 +203,19 @@ module Parser =
             | [] -> lhs, []
             | op :: rest ->
 
-            match Token.postfixPrecedence op.Type with
-            | Some (precedence, ()) ->
+            match parser.UnaryPostfix.TryGetValue op.Type with
+            | true, ((precedence, ()), construct) ->
                 if precedence < minBinding then
                     printfn "Hit a postfix op which does not bind: %+A" op
                     lhs, rest
                 else
                     printfn "Hit a postfix op which binds: %+A" op
-                    go (buildUnary op.Type lhs) rest
-            | None ->
+                    go (construct lhs) rest
+            | false, _ ->
 
-            match Token.infixPrecedence op.Type with
-            | None -> lhs, op :: rest
-            | Some (leftBinding, rightBinding) ->
+            match parser.Infix.TryGetValue op.Type with
+            | false, _ -> lhs, op :: rest
+            | true, ((leftBinding, rightBinding), construct) ->
 
             if leftBinding < minBinding then
                 printfn "Hit an infix op which does not bind on the left: %+A" op
@@ -227,7 +226,7 @@ module Parser =
 
             let rhs, remainingTokens = parseInner parser inputString rest rightBinding
 
-            go (buildBinary op.Type lhs rhs) remainingTokens
+            go (construct lhs rhs) remainingTokens
 
         go lhs rest
 
