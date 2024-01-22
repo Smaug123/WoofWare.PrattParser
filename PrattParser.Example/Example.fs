@@ -1,7 +1,8 @@
-namespace PrattParser
+namespace ParseExample
 
 open System
 open System.Globalization
+open PrattParser
 
 [<RequireQualifiedAccess>]
 module Example =

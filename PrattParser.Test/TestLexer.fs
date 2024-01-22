@@ -1,6 +1,6 @@
 namespace PrattParser.Test
 
-open PrattParser
+open ParseExample
 open NUnit.Framework
 open FsUnitTyped
 

@@ -252,4 +252,9 @@ module Parser =
 
         go lhs rest
 
-    let parse parser inputString tokens = parseInner parser inputString tokens 0
+    let parse<'tokenTag, 'token, 'expr when 'tokenTag : comparison>
+        (parser : Parser<'tokenTag, 'token, 'expr>)
+        (inputString : string)
+        (tokens : 'token list)
+        =
+        parseInner parser inputString tokens 0

@@ -4,6 +4,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PrattParser", "PrattParser\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PrattParser.Test", "PrattParser.Test\PrattParser.Test.fsproj", "{7317F801-6AB2-4C33-B6B2-DCB006880B42}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PrattParser.Example", "PrattParser.Example\PrattParser.Example.fsproj", "{95FEFE34-6A1C-4546-8B39-77A97C7F7A82}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{7317F801-6AB2-4C33-B6B2-DCB006880B42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7317F801-6AB2-4C33-B6B2-DCB006880B42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7317F801-6AB2-4C33-B6B2-DCB006880B42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95FEFE34-6A1C-4546-8B39-77A97C7F7A82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95FEFE34-6A1C-4546-8B39-77A97C7F7A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95FEFE34-6A1C-4546-8B39-77A97C7F7A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95FEFE34-6A1C-4546-8B39-77A97C7F7A82}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

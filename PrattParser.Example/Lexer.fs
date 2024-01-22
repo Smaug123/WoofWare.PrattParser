@@ -1,4 +1,4 @@
-namespace PrattParser
+namespace ParseExample
 
 [<RequireQualifiedAccess>]
 module Lexer =
