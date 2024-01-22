@@ -45,6 +45,6 @@ module TestParser =
     let ``Parser looks plausible`` (input : string, expected : Expr) =
         let tokens = Lexer.lex input |> List.ofSeq
 
-        let expr, remaining = Parser.parse Parser.basicParser input tokens
-        expr |> shouldEqual expected
+        let expr, remaining = Parser.parse Example.parser input tokens
         remaining |> shouldEqual []
+        expr |> shouldEqual expected

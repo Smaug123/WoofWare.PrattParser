@@ -3,95 +3,101 @@ namespace PrattParser
 open System
 open System.Globalization
 
+type BracketLikeParser =
+    {
+        /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
+        /// whereas `(...)` does not
+        ConsumeAfterFinalToken : bool
+        BoundaryTokens : TokenType list
+        Construct : Expr list -> Expr
+    }
+
+type Parser =
+    {
+        UnaryPrefix : Map<TokenType, (unit * int) * (Expr -> Expr)>
+        UnaryPostfix : Map<TokenType, (int * unit) * (Expr -> Expr)>
+        Infix : Map<TokenType, (int * int) * (Expr -> Expr -> Expr)>
+        Atom : string -> Token -> Expr option
+        BracketLike : Map<TokenType, BracketLikeParser list>
+    }
+
 [<RequireQualifiedAccess>]
 module Parser =
-    let atom (inputString : string) (token : Token) : Expr option =
-        match token.Type with
-        | TokenType.ConstInt ->
-            let start, len = token.Trivia
-
-            Int32.Parse (inputString.AsSpan().Slice (start, len), NumberStyles.None, CultureInfo.InvariantCulture)
-            |> Expr.constInt
-            |> Some
-        | TokenType.Var ->
-            let start, len = token.Trivia
-            Some (Expr.var (inputString.Substring (start, len)))
-        | TokenType.Plus
-        | TokenType.Minus
-        | TokenType.Times
-        | TokenType.Factorial
-        | TokenType.If
-        | TokenType.Then
-        | TokenType.Else
-        | TokenType.LeftBracket
-        | TokenType.RightBracket -> None
-
-    type BracketLikeParser =
+    let empty =
         {
-            /// Whether to consume input after the final token, e.g. like `if...then...else...` consumes,
-            /// whereas `(...)` does not
-            ConsumeAfterFinalToken : bool
-            BoundaryTokens : TokenType list
-            Construct : Expr list -> Expr
+            UnaryPrefix = Map.empty
+            UnaryPostfix = Map.empty
+            Infix = Map.empty
+            Atom = fun _ _ -> None
+            BracketLike = Map.empty
         }
 
-    type Parser =
-        {
-            UnaryPrefix : Map<TokenType, (unit * int) * (Expr -> Expr)>
-            UnaryPostfix : Map<TokenType, (int * unit) * (Expr -> Expr)>
-            Infix : Map<TokenType, (int * int) * (Expr -> Expr -> Expr)>
-            Atom : string -> Token -> Expr option
-            BracketLike : Map<TokenType, BracketLikeParser list>
-        }
-
-    let basicParser : Parser =
-        {
-            Atom = atom
+    let withUnaryPrefix (tokenType : TokenType) (precedence : unit * int) (construct : Expr -> Expr) (parser : Parser) =
+        { parser with
             UnaryPrefix =
-                [ TokenType.Plus, (((), 5), id) ; TokenType.Minus, (((), 5), Expr.unaryMinus) ]
-                |> Map.ofList
-            UnaryPostfix = [ TokenType.Factorial, ((7, ()), Expr.factorial) ] |> Map.ofList
+                parser.UnaryPrefix
+                |> Map.change
+                    tokenType
+                    (fun existing ->
+                        match existing with
+                        | None -> Some (precedence, construct)
+                        | Some _ -> failwithf "Duplicate unary prefix parser added for token %+A" tokenType
+                    )
+        }
+
+    let withUnaryPostfix
+        (tokenType : TokenType)
+        (precedence : int * unit)
+        (construct : Expr -> Expr)
+        (parser : Parser)
+        =
+        { parser with
+            UnaryPostfix =
+                parser.UnaryPostfix
+                |> Map.change
+                    tokenType
+                    (fun existing ->
+                        match existing with
+                        | None -> Some (precedence, construct)
+                        | Some _ -> failwithf "Duplicate unary postfix parser added for token %+A" tokenType
+                    )
+        }
+
+    let withInfix
+        (tokenType : TokenType)
+        (precedence : int * int)
+        (construct : Expr -> Expr -> Expr)
+        (parser : Parser)
+        : Parser
+        =
+        { parser with
             Infix =
-                [
-                    TokenType.Plus, ((1, 2), Expr.plus)
-                    TokenType.Minus, ((1, 2), Expr.minus)
-                    TokenType.Times, ((3, 4), Expr.times)
-                ]
-                |> Map.ofList
+                parser.Infix
+                |> Map.change
+                    tokenType
+                    (fun existing ->
+                        match existing with
+                        | None -> Some (precedence, construct)
+                        | Some _ -> failwithf "Duplicate infix parser added for token %+A" tokenType
+                    )
+        }
+
+    let withBracketLike (tokenType : TokenType) (toAdd : BracketLikeParser) (parser : Parser) : Parser =
+        { parser with
             BracketLike =
-                [
-                    TokenType.LeftBracket,
-                    [
-                        {
-                            ConsumeAfterFinalToken = false
-                            BoundaryTokens = [ TokenType.RightBracket ]
-                            Construct = Seq.exactlyOne >> Expr.paren
-                        }
-                    ]
-                    TokenType.If,
-                    [
-                        {
-                            ConsumeAfterFinalToken = true
-                            BoundaryTokens = [ TokenType.Then ; TokenType.Else ]
-                            Construct =
-                                fun s ->
-                                    match s with
-                                    | [ ifClause ; thenClause ; elseClause ] ->
-                                        Expr.ifThenElse ifClause thenClause elseClause
-                                    | _ -> failwith "logic error"
-                        }
-                        {
-                            ConsumeAfterFinalToken = true
-                            BoundaryTokens = [ TokenType.Then ]
-                            Construct =
-                                fun s ->
-                                    match s with
-                                    | [ ifClause ; thenClause ] -> Expr.ifThen ifClause thenClause
-                                    | _ -> failwith "logic error"
-                        }
-                    ]
-                ]
-                |> Map.ofList
+                parser.BracketLike
+                |> Map.change
+                    tokenType
+                    (fun existing ->
+                        match existing with
+                        | None -> Some [ toAdd ]
+                        | Some existing -> Some (toAdd :: existing)
+                    )
+        }
+
+    let defineAtoms (atom : string -> Token -> Expr option) (parser : Parser) : Parser =
+        { parser with
+            Atom = atom
         }
 
     let rec parseBracketLike
@@ -157,8 +163,7 @@ module Parser =
         else
             fromSubParsersContinuing
 
-    /// The input string is only required so that the tokens
-    /// have something to slice into.
+    /// The input string is only required so that the tokens have something to slice into.
     and parseInner
         (parser : Parser)
         (inputString : string)
@@ -214,19 +219,20 @@ module Parser =
             | false, _ ->
 
             match parser.Infix.TryGetValue op.Type with
-            | false, _ -> lhs, op :: rest
             | true, ((leftBinding, rightBinding), construct) ->
+                if leftBinding < minBinding then
+                    printfn "Hit an infix op which does not bind on the left: %+A" op
+                    lhs, op :: rest
+                else
 
-            if leftBinding < minBinding then
-                printfn "Hit an infix op which does not bind on the left: %+A" op
+                printfn "Hit an infix op which binds on the left: %+A" op
+
+                let rhs, remainingTokens = parseInner parser inputString rest rightBinding
+
+                go (construct lhs rhs) remainingTokens
+            | false, _ ->
+                // TODO: This could be function application!
                 lhs, op :: rest
-            else
-
-            printfn "Hit an infix op which binds on the left: %+A" op
-
-            let rhs, remainingTokens = parseInner parser inputString rest rightBinding
-
-            go (construct lhs rhs) remainingTokens
 
         go lhs rest
 

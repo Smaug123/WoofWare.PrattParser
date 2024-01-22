@@ -9,6 +9,7 @@
     <Compile Include="Domain.fs"/>
     <Compile Include="Lexer.fs"/>
     <Compile Include="Parser.fs"/>
+    <Compile Include="Example.fs" />
   </ItemGroup>
 
 </Project>
