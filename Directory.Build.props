@@ -21,7 +21,7 @@
   <Target Name="MapSourceRoot" BeforeTargets="_GenerateSourceLinkFile" Condition="'$(SourceRootMappedPathsFeatureSupported)' != 'true'">
     <ItemGroup>
       <SourceRoot Update="@(SourceRoot)">
-        <MappedPath>Z:\CheckoutRoot\WoofWare.Myriad\</MappedPath>
+        <MappedPath>Z:\CheckoutRoot\PrattParser\</MappedPath>
       </SourceRoot>
     </ItemGroup>
   </Target>
