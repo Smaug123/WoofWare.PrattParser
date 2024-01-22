@@ -67,4 +67,4 @@ module TestLexer =
                 }
             ]
 
-        Lexer.lex input |> shouldEqual expected
+        Lexer.lex input |> Seq.toList |> shouldEqual expected
