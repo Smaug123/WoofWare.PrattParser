@@ -7,3 +7,5 @@ riderModule.iml
 *.DotSettings.*
 
 result
+analysis.sarif
+.analyzerpackages/
