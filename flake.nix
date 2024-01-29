@@ -44,7 +44,7 @@
         };
     in {
       packages = {
-        fantomas = dotnetTool null "fantomas" (builtins.fromJSON (builtins.readFile ./.config/dotnet-tools.json)).tools.fantomas.version "sha256-JnXRh/XankJChL8fy39iqcUUQhi70xeKzIFrjWGCRl8=";
+        fantomas = dotnetTool null "fantomas" (builtins.fromJSON (builtins.readFile ./.config/dotnet-tools.json)).tools.fantomas.version (import ./nix/deps.nix (x: x)).sha256;
         fsharp-analyzers = dotnetTool "FSharp.Analyzers.Cli" "fsharp-analyzers" (builtins.fromJSON (builtins.readFile ./.config/dotnet-tools.json)).tools.fsharp-analyzers.version "sha256-CWMW06ncSs8QkQvxNPNrgn3TAzMU6qCT1k2A3pnGrYQ=";
         fetchDeps = let
           flags = [];

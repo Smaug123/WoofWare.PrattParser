@@ -8,8 +8,8 @@
   })
   (fetchNuGet {
     pname = "fantomas";
-    version = "6.3.0-alpha-006";
-    sha256 = "sha256-JnXRh/XankJChL8fy39iqcUUQhi70xeKzIFrjWGCRl8=";
+    version = "6.3.0-alpha-007";
+    sha256 = "sha256-uZw6h6k/DS4BcYtK9cv8TLS0H8MZDO3WBaPPTdtTgu0=";
   })
   (fetchNuGet {
     pname = "ApiSurface";
