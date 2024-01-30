@@ -9,7 +9,7 @@
   (fetchNuGet {
     pname = "G-Research.FSharp.Analyzers";
     version = "0.8.0";
-    sha256 = "sha256-CXMWx6ncSs8QkQvxNPNrgn3TAzMU6qCT1k2A3pnGrYQ=  ";
+    sha256 = "sha256-EeXo3InJ1AmCv9y5a23q0/uSLkBbNefzsTy7VXgTm+U=";
   })
   (fetchNuGet {
     pname = "fantomas";
