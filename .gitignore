@@ -10,3 +10,5 @@ riderModule.iml
 *.sarif
 
 result
+analysis.sarif
+.analyzerpackages/
