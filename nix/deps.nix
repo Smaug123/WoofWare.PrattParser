@@ -3,8 +3,13 @@
 {fetchNuGet}: [
   (fetchNuGet {
     pname = "fsharp-analyzers";
-    version = "0.23.0";
-    sha256 = "sha256-CWMW06ncSs8QkQvxNPNrgn3TAzMU6qCT1k2A3pnGrYQ=  ";
+    version = "0.24.0";
+    sha256 = "sha256-cNaM/yHI28sHDGamKMrU237ltOyrR+8vPNUImB5RxjU=";
+  })
+  (fetchNuGet {
+    pname = "G-Research.FSharp.Analyzers";
+    version = "0.8.0";
+    sha256 = "sha256-CXMWx6ncSs8QkQvxNPNrgn3TAzMU6qCT1k2A3pnGrYQ=  ";
   })
   (fetchNuGet {
     pname = "fantomas";
