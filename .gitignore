@@ -5,6 +5,9 @@ riderModule.iml
 /_ReSharper.Caches/
 .idea/
 *.DotSettings.*
+.analyzerpackages/
+.direnv/
+*.sarif
 
 result
 analysis.sarif
