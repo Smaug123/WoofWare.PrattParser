@@ -168,8 +168,8 @@
   })
   (fetchNuGet {
     pname = "NUnit";
-    version = "4.0.1";
-    sha256 = "0jgiq3dbwli5r70j0bw7021d69r7bhr58s8kphlpjmf7k47l5pcd";
+    version = "4.1.0";
+    sha256 = "0fj6xwgqaxq3mrai86bklclfmjkzf038mrslwfqf4ignaz9f7g5j";
   })
   (fetchNuGet {
     pname = "NUnit3TestAdapter";
