@@ -22,11 +22,6 @@
     sha256 = "0zjq8an9cr0l7wxdmm9n9s3iyq5m0zl4x0h0wmy5cz7am8y15qc4";
   })
   (fetchNuGet {
-    pname = "coverlet.collector";
-    version = "6.0.0";
-    sha256 = "12j34vrkmph8lspbafnqmfnj2qvysz1jcrks2khw798s6dwv0j90";
-  })
-  (fetchNuGet {
     pname = "FSharp.Core";
     version = "8.0.101";
     sha256 = "0prgcnki6s0rlrfbarrcv50w1bbhaalsyhhw5gsnjs2is7qrjbii";
