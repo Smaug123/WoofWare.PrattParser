@@ -22,7 +22,7 @@
         pkgs.stdenvNoCC.mkDerivation rec {
           name = toolName;
           version = toolVersion;
-          nativeBuildInputs = [pkgs.makeWrapper];
+          nativeBuildInputs = [pkgs.makeWrapper pkgs.dotnetCorePackages.runtime_8_0];
           src = pkgs.fetchNuGet {
             pname = name;
             version = version;
@@ -38,7 +38,7 @@
             runHook preInstall
             mkdir -p "$out/lib"
             cp -r ./bin/* "$out/lib"
-            makeWrapper "${dotnet-runtime}/bin/dotnet" "$out/bin/${name}" --add-flags "$out/lib/${dll}.dll"
+            makeWrapper "${dotnet-runtime}/bin/dotnet" "$out/bin/${name}" --add-flags "$out/lib/${dll}.dll" --set PATH ${pkgs.lib.makeBinPath [pkgs.dotnet-sdk_8]}
             runHook postInstall
           '';
         };
