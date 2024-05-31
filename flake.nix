@@ -7,7 +7,6 @@
   };
 
   outputs = {
-    self,
     nixpkgs,
     flake-utils,
     ...
@@ -46,44 +45,18 @@
       packages = {
         fantomas = dotnetTool null "fantomas" (builtins.fromJSON (builtins.readFile ./.config/dotnet-tools.json)).tools.fantomas.version (builtins.head (builtins.filter (elem: elem.pname == "fantomas") ((import ./nix/deps.nix) {fetchNuGet = x: x;}))).sha256;
         fsharp-analyzers = dotnetTool "FSharp.Analyzers.Cli" "fsharp-analyzers" (builtins.fromJSON (builtins.readFile ./.config/dotnet-tools.json)).tools.fsharp-analyzers.version (builtins.head (builtins.filter (elem: elem.pname == "fsharp-analyzers") ((import ./nix/deps.nix) {fetchNuGet = x: x;}))).sha256;
-        fetchDeps = let
-          flags = [];
-          runtimeIds = ["win-x64"] ++ map (system: pkgs.dotnetCorePackages.systemToDotnetRid system) dotnet-sdk.meta.platforms;
-        in
-          pkgs.writeShellScriptBin "fetch-${pname}-deps" (builtins.readFile (pkgs.substituteAll {
-            src = ./nix/fetchDeps.sh;
-            pname = pname;
-            binPath = pkgs.lib.makeBinPath [pkgs.coreutils dotnet-sdk (pkgs.nuget-to-nix.override {inherit dotnet-sdk;})];
-            projectFiles = toString ["./PrattParser/PrattParser.fsproj"];
-            testProjectFiles = ["./PrattParser.Test/PrattParser.Test.fsproj"];
-            rids = pkgs.lib.concatStringsSep "\" \"" runtimeIds;
-            packages = dotnet-sdk.packages;
-            storeSrc = pkgs.srcOnly {
-              src = ./.;
-              pname = pname;
-              version = version;
-            };
-          }));
         default = pkgs.buildDotnetModule {
-          pname = pname;
+          inherit pname version dotnet-sdk dotnet-runtime;
           name = "PrattParser";
-          version = version;
           src = ./.;
           projectFile = "./PrattParser/PrattParser.fsproj";
-          nugetDeps = ./nix/deps.nix;
+          testProjectFile = "./PrattParser.Test/PrattParser.Test.fsproj";
+          nugetDeps = ./nix/deps.nix; # `nix build .#default.passthru.fetch-deps && ./result` and put the result here
           doCheck = true;
-          dotnet-sdk = dotnet-sdk;
-          dotnet-runtime = dotnet-runtime;
         };
       };
       devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          (with dotnetCorePackages;
-            combinePackages [
-              dotnet-sdk_8
-              dotnetPackages.Nuget
-            ])
-        ];
+        buildInputs = [dotnet-sdk];
         packages = [
           pkgs.alejandra
           pkgs.nodePackages.markdown-link-check
