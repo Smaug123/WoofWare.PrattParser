@@ -1,0 +1,18 @@
+PrattParser.BracketLikeParser`2 inherit obj
+PrattParser.BracketLikeParser`2..ctor [constructor]: (bool, bool, 'tokenTag list, 'expr list -> 'expr)
+PrattParser.BracketLikeParser`2.BoundaryTokens [property]: [read-only] 'tokenTag list
+PrattParser.BracketLikeParser`2.Construct [property]: [read-only] 'expr list -> 'expr
+PrattParser.BracketLikeParser`2.ConsumeAfterFinalToken [property]: [read-only] bool
+PrattParser.BracketLikeParser`2.ConsumeBeforeInitialToken [property]: [read-only] bool
+PrattParser.BracketLikeParser`2.get_BoundaryTokens [method]: unit -> 'tokenTag list
+PrattParser.BracketLikeParser`2.get_Construct [method]: unit -> ('expr list -> 'expr)
+PrattParser.BracketLikeParser`2.get_ConsumeAfterFinalToken [method]: unit -> bool
+PrattParser.BracketLikeParser`2.get_ConsumeBeforeInitialToken [method]: unit -> bool
+PrattParser.Parser inherit obj
+PrattParser.Parser.execute [static method]: PrattParser.Parser<'tokenTag, 'token, 'expr> -> string -> 'token list -> ('expr * 'token list)
+PrattParser.Parser.make [static method]: ('token -> 'tokenTag) -> (string -> 'token -> 'expr option) -> PrattParser.Parser<'tokenTag, 'token, 'expr>
+PrattParser.Parser.withBracketLike [static method]: 'tokenTag -> PrattParser.BracketLikeParser<'tokenTag, 'expr> -> PrattParser.Parser<'tokenTag, 'token, 'expr> -> PrattParser.Parser<'tokenTag, 'token, 'expr>
+PrattParser.Parser.withInfix [static method]: 'tokenTag -> (int, int) -> ('expr -> 'expr -> 'expr) -> PrattParser.Parser<'tokenTag, 'token, 'expr> -> PrattParser.Parser<'tokenTag, 'token, 'expr>
+PrattParser.Parser.withUnaryPostfix [static method]: 'tokenTag -> (int, unit) -> ('expr -> 'expr) -> PrattParser.Parser<'tokenTag, 'token, 'expr> -> PrattParser.Parser<'tokenTag, 'token, 'expr>
+PrattParser.Parser.withUnaryPrefix [static method]: 'tokenTag -> (unit, int) -> ('expr -> 'expr) -> PrattParser.Parser<'tokenTag, 'token, 'expr> -> PrattParser.Parser<'tokenTag, 'token, 'expr>
+PrattParser.Parser`3 inherit obj
