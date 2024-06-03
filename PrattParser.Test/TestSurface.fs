@@ -6,7 +6,7 @@ open ApiSurface
 
 [<TestFixture>]
 module TestSurface =
-    let assembly = typedefof<Parser<_,obj,obj>>.Assembly
+    let assembly = typedefof<Parser<_, obj, obj>>.Assembly
 
     [<Test>]
     let ``Ensure API surface has not been modified`` () = ApiSurface.assertIdentical assembly
@@ -24,4 +24,3 @@ module TestSurface =
     [<Test>]
     let ``Ensure public API is fully documented`` () =
         DocCoverage.assertFullyDocumented assembly
-
