@@ -1,6 +1,6 @@
 # WoofWare.PrattParser
 
-![Project logo: the face of a cartoon Shiba Inu wearing glasses, looking directly at the viewer, with a background of cartoon basic mathematical symbols. The dog is holding a pencil and a notepad with more symbols written on it. At the bottom is the slogan "EXPRESSION PAWS-ER".](./WoofWare.Myriad.Plugins/logo.png)
+![Project logo: the face of a cartoon Shiba Inu wearing glasses, looking directly at the viewer, with a background of cartoon basic mathematical symbols. The dog is holding a pencil and a notepad with more symbols written on it. At the bottom is the slogan "EXPRESSION PAWS-ER".](./PrattParser/logo.png)
 
 A [Pratt parser](https://langdev.stackexchange.com/q/3254/1025), based on [Matklad's tutorial](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html).
 
