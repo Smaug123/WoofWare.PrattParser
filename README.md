@@ -2,6 +2,8 @@
 
 A [Pratt parser](https://langdev.stackexchange.com/q/3254/1025), based on [Matklad's tutorial](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html).
 
+Bug reports welcome; I wouldn't exactly say this is well-tested, although it has worked correctly on the two things I've used it for so far.
+
 See [the example](PrattParser.Example/) for how you should use this.
 In brief:
 
