@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
 name: .NET
 
 on:
@@ -146,7 +147,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: nuget-package
-        path: PrattParser/bin/Release/PrattParser.*.nupkg
+        path: PrattParser/bin/Release/WoofWare.PrattParser.*.nupkg
 
   expected-pack:
     needs: [nuget-pack]
@@ -158,11 +159,63 @@ jobs:
           name: nuget-package
       - name: Check NuGet contents
         # Verify that there is exactly one nupkg in the artifact that would be NuGet published
-        run: if [[ $(find . -maxdepth 1 -name 'PrattParser.*.nupkg' -printf c | wc -c) -ne "1" ]]; then exit 1; fi
+        run: if [[ $(find . -maxdepth 1 -name 'WoofWare.PrattParser.*.nupkg' -printf c | wc -c) -ne "1" ]]; then exit 1; fi
+
+  github-release-plugin-dry-run:
+    needs: [nuget-pack]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download NuGet artifact (plugin)
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+      - name: Tag and release
+        env:
+          DRY_RUN: 1
+          GITHUB_TOKEN: mock-token
+        run: sh .github/workflows/tag.sh
 
   all-required-checks-complete:
-    needs: [check-dotnet-format, check-nix-format, build, build-nix, linkcheck, flake-check, analyzers, nuget-pack, expected-pack]
+    needs: [check-dotnet-format, check-nix-format, build, build-nix, linkcheck, flake-check, analyzers, nuget-pack, expected-pack, github-release-plugin-dry-run]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All required checks complete."
 
+  nuget-publish:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.fork && github.ref == 'refs/heads/main' }}
+    needs: [all-required-checks-complete]
+    environment: main-deploy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@V27
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - name: Download NuGet artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: packed
+      - name: Publish to NuGet
+        run: nix develop --command dotnet nuget push "packed/WoofWare.PrattParser.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  github-release:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.fork && github.ref == 'refs/heads/main' }}
+    needs: [all-required-checks-complete]
+    environment: main-deploy
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download NuGet artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+      - name: Tag and release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: sh .github/workflows/tag.sh
