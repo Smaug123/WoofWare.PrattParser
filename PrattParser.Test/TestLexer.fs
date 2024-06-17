@@ -1,4 +1,4 @@
-namespace PrattParser.Test
+namespace WoofWare.PrattParser.Test
 
 open ParseExample
 open NUnit.Framework

@@ -1,7 +1,7 @@
-namespace PrattParser.Test
+namespace WoofWare.PrattParser.Test
 
 open ParseExample
-open PrattParser
+open WoofWare.PrattParser
 open NUnit.Framework
 open FsUnitTyped
 
