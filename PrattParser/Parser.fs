@@ -1,4 +1,4 @@
-namespace PrattParser
+namespace WoofWare.PrattParser
 
 /// Specification of how to parse things which act like brackets: that is, they start with a token,
 /// then consume some stuff, then there's another token to mark the end.

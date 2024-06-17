@@ -1,7 +1,7 @@
-namespace PrattParser.Test
+namespace WoofWare.PrattParser.Test
 
 open NUnit.Framework
-open PrattParser
+open WoofWare.PrattParser
 open ApiSurface
 
 [<TestFixture>]

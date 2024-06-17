@@ -2,7 +2,7 @@ namespace ParseExample
 
 open System
 open System.Globalization
-open PrattParser
+open WoofWare.PrattParser
 
 [<RequireQualifiedAccess>]
 module Example =
