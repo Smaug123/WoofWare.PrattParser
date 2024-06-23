@@ -252,8 +252,8 @@ module Parser =
             | Some token -> token, rest
             | None ->
 
-            match parser.BracketLike.TryGetValue (parser.GetTag firstToken) with
-            | true, parse ->
+            match Map.tryFind (parser.GetTag firstToken) parser.BracketLike with
+            | Some parse ->
                 // This is an ambiguous parse if multiple parsers genuinely matched.
                 // (We already filter to the longest possible matching parser.)
                 match parseBracketLike parser inputString parse [] rest with
@@ -263,13 +263,13 @@ module Parser =
                     failwithf
                         "Ambiguous parse for bracket-like construct. You should restrict the grammar. %+A"
                         firstToken
-            | false, _ ->
+            | None ->
 
-            match parser.UnaryPrefix.TryGetValue (parser.GetTag firstToken) with
-            | true, (((), precedence), assemble) ->
+            match Map.tryFind (parser.GetTag firstToken) parser.UnaryPrefix with
+            | Some (((), precedence), assemble) ->
                 let rhs, rest = parseInner parser inputString rest precedence
                 assemble rhs, rest
-            | false, _ -> failwithf "didn't get an atom or prefix, got: %+A" firstToken
+            | None -> failwithf "didn't get an atom or prefix, got: %+A" firstToken
 
         let rec go (lhs : 'expr) (tokens : 'token list) : 'expr * 'token list =
             match tokens with
@@ -277,30 +277,30 @@ module Parser =
             | op :: rest ->
 
             let fromBracketed =
-                match parser.BracketLike.TryGetValue (parser.GetTag op) with
-                | true, parse ->
+                match Map.tryFind (parser.GetTag op) parser.BracketLike with
+                | Some parse ->
                     let parse = parse |> List.filter _.ConsumeBeforeInitialToken
 
                     match parseBracketLike parser inputString parse [ lhs ] rest with
                     | [ result ] -> Some result
                     | _ :: _ -> failwithf "Ambiguous parse (multiple matches) at token %+A" op
                     | [] -> None
-                | false, _ -> None
+                | None -> None
 
             match fromBracketed with
             | Some (lhs, rest) -> go lhs rest
             | None ->
 
-            match parser.UnaryPostfix.TryGetValue (parser.GetTag op) with
-            | true, ((precedence, ()), construct) ->
+            match Map.tryFind (parser.GetTag op) parser.UnaryPostfix with
+            | Some ((precedence, ()), construct) ->
                 if precedence < minBinding then
                     lhs, rest
                 else
                     go (construct lhs) rest
-            | false, _ ->
+            | None ->
 
-            match parser.Infix.TryGetValue (parser.GetTag op) with
-            | true, ((leftBinding, rightBinding), construct) ->
+            match Map.tryFind (parser.GetTag op) parser.Infix with
+            | Some ((leftBinding, rightBinding), construct) ->
                 if leftBinding < minBinding then
                     lhs, op :: rest
                 else
@@ -308,7 +308,7 @@ module Parser =
                 let rhs, remainingTokens = parseInner parser inputString rest rightBinding
 
                 go (construct lhs rhs) remainingTokens
-            | false, _ ->
+            | None ->
                 // TODO: This could be function application!
                 lhs, op :: rest
 
