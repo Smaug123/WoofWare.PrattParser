@@ -18,8 +18,8 @@
   })
   (fetchNuGet {
     pname = "FSharp.Core";
-    version = "6.0.0";
-    sha256 = "1hjhvr39c1vpgrdmf8xln5q86424fqkvy9nirkr29vl2461d2039";
+    version = "4.3.4";
+    sha256 = "1sg6i4q5nwyzh769g76f6c16876nvdpn83adqjr2y9x6xsiv5p5j";
   })
   (fetchNuGet {
     pname = "FSharp.Core";

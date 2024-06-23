@@ -1,4 +1,4 @@
-namespace PrattParser
+namespace WoofWare.PrattParser
 
 [<RequireQualifiedAccess>]
 module internal Map =
