@@ -51,7 +51,7 @@
           src = ./.;
           projectFile = "./PrattParser/PrattParser.fsproj";
           testProjectFile = "./PrattParser.Test/PrattParser.Test.fsproj";
-          nugetDeps = ./nix/deps.nix; # `nix build .#default.passthru.fetch-deps && ./result` and put the result here
+          nugetDeps = ./nix/deps.nix; # `nix build .#default.passthru.fetch-deps && ./result nix/deps.nix`
           doCheck = true;
         };
       };
