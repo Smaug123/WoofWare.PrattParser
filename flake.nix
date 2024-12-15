@@ -37,7 +37,7 @@
             runHook preInstall
             mkdir -p "$out/lib"
             cp -r ./bin/* "$out/lib"
-            makeWrapper "${dotnet-runtime}/bin/dotnet" "$out/bin/${name}" --add-flags "$out/lib/${dll}.dll" --set DOTNET_SDK_ROOT "${dotnet-sdk}/bin/dotnet"
+            makeWrapper "${dotnet-sdk}/bin/dotnet" "$out/bin/${name}" --add-flags "$out/lib/${dll}.dll" --set DOTNET_HOST_PATH "${dotnet-sdk}/bin/dotnet"
             runHook postInstall
           '';
         };
