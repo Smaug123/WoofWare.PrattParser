@@ -14,8 +14,8 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       pname = "PrattParser";
-      dotnet-sdk = pkgs.dotnet-sdk_8;
-      dotnet-runtime = pkgs.dotnetCorePackages.runtime_8_0;
+      dotnet-sdk = pkgs.dotnetCorePackages.sdk_9_0;
+      dotnet-runtime = pkgs.dotnetCorePackages.sdk_8_0;
       version = "0.1";
       dotnetTool = dllOverride: toolName: toolVersion: hash:
         pkgs.stdenvNoCC.mkDerivation rec {
@@ -26,7 +26,7 @@
             pname = name;
             version = version;
             hash = hash;
-            installPhase = ''mkdir -p $out/bin && cp -r tools/net6.0/any/* $out/bin'';
+            installPhase = ''mkdir -p $out/bin && cp -r tools/*/any/* $out/bin'';
           };
           installPhase = let
             dll =
@@ -37,7 +37,7 @@
             runHook preInstall
             mkdir -p "$out/lib"
             cp -r ./bin/* "$out/lib"
-            makeWrapper "${dotnet-runtime}/bin/dotnet" "$out/bin/${name}" --add-flags "$out/lib/${dll}.dll" --set PATH ${pkgs.lib.makeBinPath [pkgs.dotnet-sdk_8]}
+            makeWrapper "${dotnet-sdk}/bin/dotnet" "$out/bin/${name}" --add-flags "$out/lib/${dll}.dll" --set DOTNET_HOST_PATH "${dotnet-sdk}/bin/dotnet"
             runHook postInstall
           '';
         };
