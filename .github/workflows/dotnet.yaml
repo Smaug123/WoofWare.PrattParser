@@ -163,12 +163,12 @@ jobs:
         # Verify that there is exactly one nupkg in the artifact that would be NuGet published
         run: if [[ $(find . -maxdepth 1 -name 'WoofWare.PrattParser.*.nupkg' -printf c | wc -c) -ne "1" ]]; then exit 1; fi
 
-  github-release-plugin-dry-run:
+  github-release-dry-run:
     runs-on: ubuntu-latest
     needs: [nuget-pack]
     steps:
       - uses: actions/checkout@v4
-      - name: Download NuGet artifact (plugin)
+      - name: Download NuGet artifact
         uses: actions/download-artifact@v4
         with:
           name: nuget-package
@@ -192,7 +192,7 @@ jobs:
 
   all-required-checks-complete:
     if: ${{ always() }}
-    needs: [check-dotnet-format, check-nix-format, build, build-nix, linkcheck, flake-check, analyzers, nuget-pack, expected-pack, github-release-plugin-dry-run]
+    needs: [check-dotnet-format, check-nix-format, build, build-nix, linkcheck, flake-check, analyzers, nuget-pack, expected-pack, github-release-dry-run]
     runs-on: ubuntu-latest
     steps:
       - uses: G-Research/common-actions/check-required-lite@2b7dc49cb14f3344fbe6019c14a31165e258c059
@@ -250,12 +250,12 @@ jobs:
           nupkg-dir: packed/
           dotnet: ${{ steps.identify-dotnet.outputs.dotnet }}
 
-  github-release-plugin:
+  github-release:
     runs-on: ubuntu-latest
     needs: [nuget-pack]
     steps:
       - uses: actions/checkout@v4
-      - name: Download NuGet artifact (plugin)
+      - name: Download NuGet artifact
         uses: actions/download-artifact@v4
         with:
           name: nuget-package
