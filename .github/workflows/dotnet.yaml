@@ -252,6 +252,10 @@ jobs:
 
   github-release:
     runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.fork && github.ref == 'refs/heads/main' }}
+    environment: main-deploy
+    permissions:
+      contents: write
     needs: [nuget-pack]
     steps:
       - uses: actions/checkout@v4
