@@ -1,8 +1,8 @@
 [
   {
     "pname": "ApiSurface",
-    "version": "4.0.40",
-    "hash": "sha256-oO9V30T9+QN/DKSTqS6jRH7ES/NkV5n5jZnaWM0CP7E="
+    "version": "4.1.22",
+    "hash": "sha256-voj9m3YmyJ95FAMLV4sWzQMod3Em0mTjzf0LBUUFOso="
   },
   {
     "pname": "fantomas",
@@ -166,33 +166,33 @@
   },
   {
     "pname": "NuGet.Common",
-    "version": "6.10.0",
-    "hash": "sha256-cM3Q7srAykk6KA/FThZkDjs+MIIjiUJSXZjRSqPNP1o="
+    "version": "6.14.0",
+    "hash": "sha256-jDOwt3veI1GSG8CfBnf2+dJxD3E/Nmlc+vHtD4J76Ms="
   },
   {
     "pname": "NuGet.Configuration",
-    "version": "6.10.0",
-    "hash": "sha256-H/qaaKbyp3oo/w2dBvaXEhG5+Tgcp75tJR1brpSdCqs="
+    "version": "6.14.0",
+    "hash": "sha256-1PN9s6fhCw3wd2260U6hQ4vG3jIvcG8GIn1oQgxMXA0="
   },
   {
     "pname": "NuGet.Frameworks",
-    "version": "6.10.0",
-    "hash": "sha256-E88PUsK5J0b9c0sN+xNZU+X1MOCfJaIvByr1H4ZHLUM="
+    "version": "6.14.0",
+    "hash": "sha256-3ViM3R1ucQMEL2hQYsivT86kI6veMQK2xDsiAcFcVQk="
   },
   {
     "pname": "NuGet.Packaging",
-    "version": "6.10.0",
-    "hash": "sha256-RK18XuOdmXPXhmBLRGjw00QsLiKuYawqjDQUlzcbRaM="
+    "version": "6.14.0",
+    "hash": "sha256-Yafbnxs3maj55bJ1oKQiZ0QkntFUzXdhorL94YEUOhY="
   },
   {
     "pname": "NuGet.Protocol",
-    "version": "6.10.0",
-    "hash": "sha256-TPWWce4FhI3VaDhAR6mUYydFA6AjrPtcJSMmPQEmu0I="
+    "version": "6.14.0",
+    "hash": "sha256-uLDKfs+QN1MdnuQtTES8qfNzzsmYKM6XB9pwJc4G+eo="
   },
   {
     "pname": "NuGet.Versioning",
-    "version": "6.10.0",
-    "hash": "sha256-r8w4/bin+ZQK6AzkuFXhWbteQlzRFY++S1yDTrq0KfQ="
+    "version": "6.14.0",
+    "hash": "sha256-DqdOJgsphKxSvqB8b60zNPCaiLfbiu3WnUJ/90feLrY="
   },
   {
     "pname": "NUnit",
@@ -203,6 +203,11 @@
     "pname": "NUnit3TestAdapter",
     "version": "4.5.0",
     "hash": "sha256-ER3ogl0L5FYyc6pVVPY1ch+AQxG/WgFcnWECnYQJPes="
+  },
+  {
+    "pname": "System.Collections.Immutable",
+    "version": "8.0.0",
+    "hash": "sha256-F7OVjKNwpqbUh8lTidbqJWYi476nsq9n+6k0+QVRo3w="
   },
   {
     "pname": "System.Formats.Asn1",
@@ -245,13 +250,8 @@
     "hash": "sha256-BkUYNguz0e4NJp1kkW7aJBn3dyH9STwB5N8XqnlCsmY="
   },
   {
-    "pname": "System.Text.Encodings.Web",
-    "version": "7.0.0",
-    "hash": "sha256-tF8qt9GZh/nPy0mEnj6nKLG4Lldpoi/D8xM5lv2CoYQ="
-  },
-  {
     "pname": "System.Text.Json",
-    "version": "7.0.3",
-    "hash": "sha256-aSJZ17MjqaZNQkprfxm/09LaCoFtpdWmqU9BTROzWX4="
+    "version": "8.0.5",
+    "hash": "sha256-yKxo54w5odWT6nPruUVsaX53oPRe+gKzGvLnnxtwP68="
   }
 ]
