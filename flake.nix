@@ -53,6 +53,7 @@
           src = ./.;
           projectFile = "./PrattParser/PrattParser.fsproj";
           testProjectFile = "./PrattParser.Test/PrattParser.Test.fsproj";
+          disabledTests = ["WoofWare.PrattParser.Test.TestSurface.CheckVersionAgainstRemote"];
           nugetDeps = ./nix/deps.json; # `nix build .#default.fetch-deps && ./result nix/deps.json`
           doCheck = true;
         };

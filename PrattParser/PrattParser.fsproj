@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Authors>Patrick Stevens</Authors>
+    <Authors>PatrickStevens</Authors>
     <Copyright>Copyright (c) Patrick Stevens 2024</Copyright>
     <Description>For the easy construction of Pratt parsers.</Description>
     <RepositoryType>git</RepositoryType>
