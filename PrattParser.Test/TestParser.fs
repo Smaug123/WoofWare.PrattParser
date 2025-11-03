@@ -79,3 +79,55 @@ module TestParser =
         let expr, remaining = Parser.execute Example.parser input tokens
         remaining |> shouldEqual []
         expr |> shouldEqual expected
+
+    /// Regression test for a bug: when a postfix operator has lower precedence
+    /// than the minimum binding power, the operator token was incorrectly consumed.
+    ///
+    /// In this test, factorial has precedence 3, and Times requires precedence 8 for its RHS.
+    /// When parsing "a * b!", the parser should:
+    /// 1. Parse "a" as LHS of Times
+    /// 2. Start parsing RHS with minBinding=8
+    /// 3. Parse "b" as an atom
+    /// 4. See "!" with precedence 3 < 8, so return "b" and put "!" back
+    /// 5. Complete Times(a, b)
+    /// 6. See "!" with precedence 3, apply it: Factorial(Times(a, b))
+    [<Test>]
+    let ``Postfix operator token is not consumed when precedence is too low`` () =
+        // Define a simple atom function for this test
+        let atom (inputString : string) (token : Token) : Expr option =
+            match token.Type with
+            | TokenType.ConstInt ->
+                let start, len = token.Trivia
+
+                System.Int32.Parse (
+                    inputString.Substring (start, len),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture
+                )
+                |> Expr.constInt
+                |> Some
+            | TokenType.Var ->
+                let start, len = token.Trivia
+                Some (Expr.var (inputString.Substring (start, len)))
+            | _ -> None
+
+        // Create a parser with LOW precedence factorial (3 instead of 11)
+        let parserWithLowPrecedencePostfix =
+            Parser.make (fun token -> token.Type) atom
+            |> Parser.withUnaryPostfix TokenType.Factorial (3, ()) Expr.factorial
+            |> Parser.withUnaryPrefix TokenType.Plus ((), 9) id
+            |> Parser.withUnaryPrefix TokenType.Minus ((), 9) Expr.unaryMinus
+            |> Parser.withInfix TokenType.Plus (5, 6) Expr.plus
+            |> Parser.withInfix TokenType.Minus (5, 6) Expr.minus
+            |> Parser.withInfix TokenType.Times (7, 8) Expr.times
+
+        let input = "a * b!"
+        let tokens = Lexer.lex input |> List.ofSeq
+
+        // Expected: (a * b)! - factorial has lower precedence than times
+        // So times binds first (a * b), then factorial wraps the result
+        let expected = Expr.factorial (Expr.times (Expr.var "a") (Expr.var "b"))
+
+        let expr, remaining = Parser.execute parserWithLowPrecedencePostfix input tokens
+        remaining |> shouldEqual []
+        expr |> shouldEqual expected

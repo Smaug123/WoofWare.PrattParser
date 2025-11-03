@@ -294,7 +294,7 @@ module Parser =
             match Map.tryFind (parser.GetTag op) parser.UnaryPostfix with
             | Some ((precedence, ()), construct) ->
                 if precedence < minBinding then
-                    lhs, rest
+                    lhs, op :: rest
                 else
                     go (construct lhs) rest
             | None ->
