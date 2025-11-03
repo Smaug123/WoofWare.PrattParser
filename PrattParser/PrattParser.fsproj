@@ -8,7 +8,7 @@
     <Copyright>Copyright (c) Patrick Stevens 2024</Copyright>
     <Description>For the easy construction of Pratt parsers.</Description>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Smaug123/fsharp-prattparser</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Smaug123/WoofWare.PrattParser</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>fsharp;pratt-parser;parsing;parser;top-down;precedence;recursive;descent</PackageTags>
