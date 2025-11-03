@@ -8,6 +8,9 @@ module Lexer =
         else
             None
 
+    let private isAlphaNumeric (c : char) : bool =
+        ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || ('0' <= c && c <= '9')
+
     let lex (s : string) : Token seq =
         seq {
             let mutable i = 0
@@ -31,13 +34,25 @@ module Lexer =
                 | _, '.' when i < s.Length - 1 && s.[i + 1] = '[' ->
                     yield Token.standalone TokenType.ArrayIndex i 2
                     i <- i + 2
-                | _, 'i' when i < s.Length - 1 && s.[i + 1] = 'f' ->
+                | _, 'i' when
+                    i < s.Length - 1
+                    && s.[i + 1] = 'f'
+                    && (i + 2 >= s.Length || not (isAlphaNumeric s.[i + 2]))
+                    ->
                     yield Token.standalone TokenType.If i 2
                     i <- i + 2
-                | _, 't' when i < s.Length - 3 && s.[i + 1 .. i + 3] = "hen" ->
+                | _, 't' when
+                    i < s.Length - 3
+                    && s.[i + 1 .. i + 3] = "hen"
+                    && (i + 4 >= s.Length || not (isAlphaNumeric s.[i + 4]))
+                    ->
                     yield Token.standalone TokenType.Then i 4
                     i <- i + 4
-                | _, 'e' when i < s.Length - 3 && s.[i + 1 .. i + 3] = "lse" ->
+                | _, 'e' when
+                    i < s.Length - 3
+                    && s.[i + 1 .. i + 3] = "lse"
+                    && (i + 4 >= s.Length || not (isAlphaNumeric s.[i + 4]))
+                    ->
                     yield Token.standalone TokenType.Else i 4
                     i <- i + 4
                 | startI, c ->

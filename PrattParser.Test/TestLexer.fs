@@ -69,12 +69,10 @@ module TestLexer =
 
         Lexer.lex input |> Seq.toList |> shouldEqual expected
 
+    /// Regression test for a bug in the example's lexer where keywords which were prefixes of other tokens were
+    /// parsed as the keyword.
     [<Test>]
-    let ``Bug 2: Variables starting with keywords should tokenize as single variables`` () =
-        // This test demonstrates Bug 2: the lexer incorrectly splits variables
-        // that start with keywords ("if", "then", "else") into multiple tokens.
-        // See BUGS.md for details.
-
+    let ``Variables starting with keywords tokenize as single variables`` () =
         let input = "iffy"
 
         let expected =
@@ -85,5 +83,4 @@ module TestLexer =
                 }
             ]
 
-        // Currently fails: lexer produces [If, Var("fy")] instead of [Var("iffy")]
         Lexer.lex input |> Seq.toList |> shouldEqual expected
