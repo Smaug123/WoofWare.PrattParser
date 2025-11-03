@@ -98,7 +98,12 @@ module TestParser =
             match token.Type with
             | TokenType.ConstInt ->
                 let start, len = token.Trivia
-                System.Int32.Parse (inputString.Substring (start, len), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture)
+
+                System.Int32.Parse (
+                    inputString.Substring (start, len),
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture
+                )
                 |> Expr.constInt
                 |> Some
             | TokenType.Var ->
