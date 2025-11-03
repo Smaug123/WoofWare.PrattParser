@@ -45,7 +45,12 @@ module Example =
                 ConsumeBeforeInitialToken = false
                 ConsumeAfterFinalToken = false
                 BoundaryTokens = [ TokenType.RightBracket ]
-                Construct = Seq.exactlyOne >> Expr.paren
+                Construct =
+                    fun s ->
+                        match s with
+                        | [ Some expr ] -> Expr.paren expr
+                        | [ None ] -> failwith "Empty parentheses are not supported"
+                        | _ -> failwith "logic error"
             }
         |> Parser.withBracketLike
             TokenType.If
@@ -56,7 +61,11 @@ module Example =
                 Construct =
                     fun s ->
                         match s with
-                        | [ ifClause ; thenClause ; elseClause ] -> Expr.ifThenElse ifClause thenClause elseClause
+                        | [ Some ifClause ; Some thenClause ; Some elseClause ] ->
+                            Expr.ifThenElse ifClause thenClause elseClause
+                        | [ None ; _ ; _ ] -> failwith "Empty if condition is not supported"
+                        | [ _ ; None ; _ ] -> failwith "Empty then clause is not supported"
+                        | [ _ ; _ ; None ] -> failwith "Empty else clause is not supported"
                         | _ -> failwith "logic error"
             }
         |> Parser.withBracketLike
@@ -68,7 +77,9 @@ module Example =
                 Construct =
                     fun s ->
                         match s with
-                        | [ ifClause ; thenClause ] -> Expr.ifThen ifClause thenClause
+                        | [ Some ifClause ; Some thenClause ] -> Expr.ifThen ifClause thenClause
+                        | [ None ; _ ] -> failwith "Empty if condition is not supported"
+                        | [ _ ; None ] -> failwith "Empty then clause is not supported"
                         | _ -> failwith "logic error"
             }
         |> Parser.withBracketLike
@@ -80,6 +91,8 @@ module Example =
                 Construct =
                     fun s ->
                         match s with
-                        | [ arg ; contents ] -> Expr.arrayIndex arg contents
+                        | [ Some arg ; Some contents ] -> Expr.arrayIndex arg contents
+                        | [ None ; _ ] -> failwith "Empty array target is not supported"
+                        | [ _ ; None ] -> failwith "Empty array index is not supported"
                         | _ -> failwith "logic error"
             }
