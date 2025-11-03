@@ -68,3 +68,19 @@ module TestLexer =
             ]
 
         Lexer.lex input |> Seq.toList |> shouldEqual expected
+
+    /// Regression test for a bug in the example's lexer where keywords which were prefixes of other tokens were
+    /// parsed as the keyword.
+    [<Test>]
+    let ``Variables starting with keywords tokenize as single variables`` () =
+        let input = "iffy"
+
+        let expected =
+            [
+                {
+                    Type = TokenType.Var
+                    Trivia = (0, 4)
+                }
+            ]
+
+        Lexer.lex input |> Seq.toList |> shouldEqual expected
