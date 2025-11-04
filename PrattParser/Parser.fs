@@ -28,10 +28,22 @@ type BracketLikeParser<'tokenTag, 'expr> =
         /// How to build an expression given that you've got all the constituent chunks that came
         /// between the delimiters.
         ///
-        /// We guarantee that the input list will have (as many elements as BoundaryTokens)+1
-        /// if ConsumeAfterFinalToken is true, or as many elements as BoundaryTokens
-        /// if ConsumeAfterFinalToken is false.
-        Construct : 'expr list -> 'expr
+        /// The input list length is determined as:
+        /// (#BoundaryTokens) + (1 if ConsumeBeforeInitialToken else 0) + (1 if ConsumeAfterFinalToken else 0).
+        /// For example:
+        /// - `a.[5]` has BoundaryTokens=[']'], ConsumeBeforeInitialToken=true, ConsumeAfterFinalToken=false
+        ///   and receives 2 elements: [Some a; Some 5]
+        /// - `if...then...else` has BoundaryTokens=[then; else], ConsumeBeforeInitialToken=false,
+        ///   ConsumeAfterFinalToken=true and receives 3 elements
+        /// - `(...)` has BoundaryTokens=[')'], ConsumeBeforeInitialToken=false, ConsumeAfterFinalToken=false
+        ///   and receives 1 element
+        ///
+        /// Each element is Some expr if that segment contained content, or None if the segment
+        /// was empty. For segments before the final boundary token, a segment is empty if the next
+        /// token is immediately a boundary token. For the final segment (when ConsumeAfterFinalToken=true),
+        /// a segment is empty if the token stream is empty.
+        /// For example, `[]` would pass `[None]` to a construct with one boundary token.
+        Construct : 'expr option list -> 'expr
     }
 
 /// An entity which knows how to parse a stream of 'tokens into an 'expr.
@@ -176,7 +188,7 @@ module Parser =
         (parser : Parser<'tokenTag, 'token, 'expr>)
         (inputString : string)
         (subParsers : BracketLikeParser<'tokenTag, 'expr> list)
-        (exprsSoFar : 'expr list)
+        (exprsSoFar : 'expr option list)
         (tokens : 'token list)
         : ('expr * 'token list) list
         =
@@ -192,33 +204,71 @@ module Parser =
                 []
             else
 
-            let contents, rest = parseInner parser inputString tokens 0
+            // Check if the next token is a boundary token (indicating an empty segment)
+            let nextIsBoundary =
+                match tokens with
+                | [] -> false
+                | next :: _ ->
+                    subParsersContinuing
+                    |> List.exists (fun sp ->
+                        match sp.BoundaryTokens with
+                        | [] -> failwith "logic error: continuing parser has empty boundary tokens"
+                        | head :: _ -> head = parser.GetTag next
+                    )
 
-            match rest with
-            | [] ->
-                // No valid parses down this path: we've run out of tokens despite all
-                // bracket-like parsers expecting another boundary token
-                []
-            | next :: rest ->
+            if nextIsBoundary then
+                // Empty segment - next token is a boundary
+                match tokens with
+                | [] -> failwith "logic error: nextIsBoundary was true but tokens is empty"
+                | next :: rest ->
 
-            // Which bracket-like parsers are now ruled out by the next bracket-like token?
-            let subParsersContinuing =
-                subParsersContinuing
-                |> List.choose (fun subParser ->
-                    match subParser.BoundaryTokens with
-                    | [] -> failwith "logic error, this was ruled out earlier"
-                    | head :: boundary ->
-                        if head = parser.GetTag next then
-                            Some
-                                { subParser with
-                                    BoundaryTokens = boundary
-                                }
-                        else
-                            None
-                )
+                // Which bracket-like parsers match this boundary token?
+                let subParsersContinuing =
+                    subParsersContinuing
+                    |> List.choose (fun subParser ->
+                        match subParser.BoundaryTokens with
+                        | [] -> failwith "logic error, this was ruled out earlier"
+                        | head :: boundary ->
+                            if head = parser.GetTag next then
+                                Some
+                                    { subParser with
+                                        BoundaryTokens = boundary
+                                    }
+                            else
+                                None
+                    )
 
-            // And proceed with the ones which are still valid.
-            parseBracketLike parser inputString subParsersContinuing (contents :: exprsSoFar) rest
+                // Proceed with None for this empty segment
+                parseBracketLike parser inputString subParsersContinuing (None :: exprsSoFar) rest
+            else
+                // Non-empty segment - parse the content
+                let contents, rest = parseInner parser inputString tokens 0
+
+                match rest with
+                | [] ->
+                    // No valid parses down this path: we've run out of tokens despite all
+                    // bracket-like parsers expecting another boundary token
+                    []
+                | next :: rest ->
+
+                // Which bracket-like parsers are now ruled out by the next bracket-like token?
+                let subParsersContinuing =
+                    subParsersContinuing
+                    |> List.choose (fun subParser ->
+                        match subParser.BoundaryTokens with
+                        | [] -> failwith "logic error, this was ruled out earlier"
+                        | head :: boundary ->
+                            if head = parser.GetTag next then
+                                Some
+                                    { subParser with
+                                        BoundaryTokens = boundary
+                                    }
+                            else
+                                None
+                    )
+
+                // And proceed with the ones which are still valid.
+                parseBracketLike parser inputString subParsersContinuing (Some contents :: exprsSoFar) rest
 
         // We'll only consider bracket-like parsers which have already consumed all they want to consume
         // if no other parser wanted to consume more. (That is, `if-then-else` is preferred to `if-then`
@@ -227,8 +277,15 @@ module Parser =
             subParsersEnded
             |> List.map (fun subParser ->
                 if subParser.ConsumeAfterFinalToken then
-                    let contents, rest = parseInner parser inputString tokens 0
-                    subParser.Construct (List.rev (contents :: exprsSoFar)), rest
+                    // Check if the final segment is empty
+                    match tokens with
+                    | [] ->
+                        // Empty final segment
+                        subParser.Construct (List.rev (None :: exprsSoFar)), tokens
+                    | _ ->
+                        // Non-empty final segment
+                        let contents, rest = parseInner parser inputString tokens 0
+                        subParser.Construct (List.rev (Some contents :: exprsSoFar)), rest
                 else
                     subParser.Construct (List.rev exprsSoFar), tokens
             )
@@ -281,7 +338,7 @@ module Parser =
                 | Some parse ->
                     let parse = parse |> List.filter _.ConsumeBeforeInitialToken
 
-                    match parseBracketLike parser inputString parse [ lhs ] rest with
+                    match parseBracketLike parser inputString parse [ Some lhs ] rest with
                     | [ result ] -> Some result
                     | _ :: _ -> failwithf "Ambiguous parse (multiple matches) at token %+A" op
                     | [] -> None
