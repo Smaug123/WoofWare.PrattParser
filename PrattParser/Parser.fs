@@ -28,12 +28,20 @@ type BracketLikeParser<'tokenTag, 'expr> =
         /// How to build an expression given that you've got all the constituent chunks that came
         /// between the delimiters.
         ///
-        /// We guarantee that the input list will have (as many elements as BoundaryTokens)+1
-        /// if ConsumeAfterFinalToken is true, or as many elements as BoundaryTokens
-        /// if ConsumeAfterFinalToken is false.
+        /// The input list length is determined as:
+        /// (#BoundaryTokens) + (1 if ConsumeBeforeInitialToken else 0) + (1 if ConsumeAfterFinalToken else 0).
+        /// For example:
+        /// - `a.[5]` has BoundaryTokens=[']'], ConsumeBeforeInitialToken=true, ConsumeAfterFinalToken=false
+        ///   and receives 2 elements: [Some a; Some 5]
+        /// - `if...then...else` has BoundaryTokens=[then; else], ConsumeBeforeInitialToken=false,
+        ///   ConsumeAfterFinalToken=true and receives 3 elements
+        /// - `(...)` has BoundaryTokens=[')'], ConsumeBeforeInitialToken=false, ConsumeAfterFinalToken=false
+        ///   and receives 1 element
         ///
         /// Each element is Some expr if that segment contained content, or None if the segment
-        /// was empty (i.e., the next token was immediately a boundary token).
+        /// was empty. For segments before the final boundary token, a segment is empty if the next
+        /// token is immediately a boundary token. For the final segment (when ConsumeAfterFinalToken=true),
+        /// a segment is empty if the token stream is empty.
         /// For example, `[]` would pass `[None]` to a construct with one boundary token.
         Construct : 'expr option list -> 'expr
     }
