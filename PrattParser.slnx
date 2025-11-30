@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="PrattParser.Example/PrattParser.Example.fsproj" />
+  <Project Path="PrattParser.Test/PrattParser.Test.fsproj" />
+  <Project Path="PrattParser/PrattParser.fsproj" />
+</Solution>
