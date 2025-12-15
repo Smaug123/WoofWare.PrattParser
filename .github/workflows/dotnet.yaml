@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: nuget-package
       - name: Check NuGet contents
@@ -169,7 +169,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: nuget-package
       - name: Compute package path
@@ -209,7 +209,7 @@ jobs:
       contents: read
     steps:
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: nuget-package
           path: packed
@@ -235,7 +235,7 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: nuget-package
           path: packed
@@ -265,7 +265,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: nuget-package
       - name: Compute package path
