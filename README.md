@@ -1,6 +1,5 @@
 # WoofWare.PrattParser
 
-![Project logo: the face of a cartoon Shiba Inu wearing glasses, looking directly at the viewer, with a background of cartoon basic mathematical symbols. The dog is holding a pencil and a notepad with more symbols written on it. At the bottom is the slogan "EXPRESSION PAWS-ER".](./PrattParser/logo.png)
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="logos/dark.png">
   <source media="(prefers-color-scheme: light)" srcset="logos/light.png">
