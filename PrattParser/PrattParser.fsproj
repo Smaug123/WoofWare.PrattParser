@@ -14,7 +14,7 @@
     <PackageTags>fsharp;pratt-parser;parsing;parser;top-down;precedence;recursive;descent</PackageTags>
     <WarnOn>FS3559</WarnOn>
     <PackageId>WoofWare.PrattParser</PackageId>
-    <PackageIcon>logo.png</PackageIcon>
+    <PackageIcon>light.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
