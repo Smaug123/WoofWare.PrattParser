@@ -1,6 +1,11 @@
 # WoofWare.PrattParser
 
 ![Project logo: the face of a cartoon Shiba Inu wearing glasses, looking directly at the viewer, with a background of cartoon basic mathematical symbols. The dog is holding a pencil and a notepad with more symbols written on it. At the bottom is the slogan "EXPRESSION PAWS-ER".](./PrattParser/logo.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logos/dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="logos/light.png">
+  <img alt="Project logo: minimalistic black-and-white face of a cartoon Shiba Inu. The eye on the right as we see it is an arithmetic plus sign. The left eye is not an eye but is another Shiba Inu face; that inner Shiba's face has a right eye being an arithmetic times sign, and its left eye is an eye. Both Shiba faces are framed by large parentheses." src="logos/light.png" width="300">
+</picture>
 
 A [Pratt parser](https://langdev.stackexchange.com/q/3254/1025), based on [Matklad's tutorial](https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html).
 
