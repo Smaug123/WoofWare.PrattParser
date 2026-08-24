@@ -22,10 +22,6 @@
     <Compile Include="Parser.fs"/>
     <EmbeddedResource Include="version.json" />
     <EmbeddedResource Include="SurfaceBaseline.txt"/>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
     <None Include="..\logos\light.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
@@ -35,5 +31,59 @@
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.3.4" />
   </ItemGroup>
+
+  <!--
+    nuget.org renders the packed readme through Markdig with DisableHtml(), which escapes raw
+    HTML instead of dropping it, and it does not resolve relative image paths at all. The
+    <picture> element that gives GitHub its light/dark logo would therefore appear on the
+    package page as literal tags. Pack a copy with that element removed; on nuget.org the logo
+    is carried by PackageIcon instead.
+  -->
+  <UsingTask TaskName="WriteReadmeWithoutLogo"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Source ParameterType="System.String" Required="true" />
+      <Destination ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string readme = File.ReadAllText(Source);
+string stripped = Regex.Replace(readme, "<picture>[\\s\\S]*?</picture>\\s*", "");
+
+// Any other raw HTML would reach nuget.org as escaped tags, so refuse to pack it. The pattern is
+// CommonMark's own HTML-block condition (a tag at the start of a line, indented at most three
+// spaces), applied after fenced code blocks are removed so that markup shown as an example does
+// not trip it.
+string prose = Regex.Replace(stripped, "(?ms)^```.*?^```", "");
+if (Regex.IsMatch(prose, "(?m)^ {0,3}<[A-Za-z/]"))
+{
+    Log.LogError(
+        "{0} contains raw HTML other than the <picture> logo element. nuget.org escapes raw HTML "
+        + "rather than rendering it, so that markup would appear on the package page as literal "
+        + "tags: express it in CommonMark instead, or teach this task to strip it too.",
+        Source);
+}
+else
+{
+    Directory.CreateDirectory(Path.GetDirectoryName(Destination));
+    if (!File.Exists(Destination) || File.ReadAllText(Destination) != stripped)
+    {
+        File.WriteAllText(Destination, stripped);
+    }
+}
+]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="PackReadmeWithoutLogo" BeforeTargets="_GetPackageFiles">
+    <PropertyGroup>
+      <_NuGetReadme>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)nuget-readme/README.md</_NuGetReadme>
+    </PropertyGroup>
+    <WriteReadmeWithoutLogo Source="$(MSBuildProjectDirectory)/../README.md" Destination="$(_NuGetReadme)" />
+    <ItemGroup>
+      <None Include="$(_NuGetReadme)" Pack="true" PackagePath="\" />
+    </ItemGroup>
+  </Target>
 
 </Project>
