@@ -113,7 +113,8 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: Run link checker
-        run: nix develop --command lychee README.md
+        # Stack Exchange serves 403 Forbidden to GHA requests
+        run: nix develop --command lychee --exclude 'stackexchange.com' README.md
 
   flake-check:
     name: Check flake
