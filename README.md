@@ -31,3 +31,7 @@ For example, if `+` has precedence (10, 5), so it binds strongly on the left and
 * `a + b + c` is morally `a+ b+ c` because the `+` binds strongly to the left;
 * `a+ b+ c` can only be bracketed as `a+ (b+ c)` because the rightmost `+` wants to stick to the `b` more than it wants to stick to the `c`;
 * so `a + b + c` is equal to `a + (b + c)`, i.e. `+` is right-associative.
+
+## Licence
+
+[MIT](./LICENSE).
